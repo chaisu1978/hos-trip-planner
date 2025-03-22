@@ -1,0 +1,20 @@
+# Git
+.git
+.gitignore
+
+# Docker
+.docker
+
+# Python
+app/__pycache__/
+app/*/__pycache__/
+app/*/*/__pycache__/
+app/*/*/*/__pycache__/
+.env/
+deployment/.env.*
+.venv/
+venv/
+frontend/node_modules/
+#TODOS.txt
+TODOS.md
+BargainBuddy-color-palette.css
