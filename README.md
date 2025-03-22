@@ -40,6 +40,8 @@ POSTGRES_DB=devdb
 POSTGRES_USER=devuser  
 POSTGRES_PASSWORD=devpass  
 DOMAIN='http://localhost:8000'
+CORS_ORIGINS=http://localhost:5173
+CSRF_TRUSTED=http://localhost:5173
 
 ---
 

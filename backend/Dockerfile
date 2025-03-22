@@ -14,11 +14,20 @@ RUN apk add --update --no-cache \
     jpeg-dev \
     zlib-dev \
     libjpeg \
-    postgresql-dev && \
+    gcc \
+    libc-dev \
+    musl-dev \
+    python3-dev \
+    libffi-dev \
+    postgresql-dev \
+    build-base \
+    make && \
     python -m venv /py && \
     /py/bin/pip install --upgrade pip && \
     /py/bin/pip install -r /tmp/requirements.txt && \
+    /py/bin/pip install -r /tmp/requirements.dev.txt && \
     rm -rf /tmp
+
 
 # Add a non-root user and prepare directories
 RUN adduser \
@@ -31,7 +40,7 @@ RUN adduser \
     chmod -R 755 /vol
 
 # Copy the application code
-COPY ./backend /app
+COPY . /app
 
 # Set the working directory
 WORKDIR /app
