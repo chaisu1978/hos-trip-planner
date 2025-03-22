@@ -1,0 +1,56 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        - DEV=true
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - dev-static-data:/vol/web
+    command: >
+      sh -c "python manage.py migrate &&
+      python manage.py runserver 0.0.0.0:8000"
+    env_file: .env
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_BASE_URL
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/frontend
+      - /frontend/node_modules
+    command: npm run dev -- --host
+    env_file:
+      - ./frontend/.env.development # Ensure this is explicitly loaded
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - VITE_API_BASE_URL # <-- Ensure this references the loaded value
+    stdin_open: true
+    tty: true
+
+  db:
+    image: postgres:13-alpine
+    volumes:
+      - dev-db-data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+
+volumes:
+  dev-db-data:
+  dev-static-data:
