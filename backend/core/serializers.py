@@ -1,8 +1,7 @@
 from rest_framework import serializers
-from drf_spectacular.utils import extend_schema_field
-
-from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field  # noqa
 from .models import User
+
 
 class UserSerializer(serializers.ModelSerializer):
 
@@ -28,7 +27,9 @@ class UserSerializer(serializers.ModelSerializer):
     def validate_email(self, value):
         user = self.instance
         if User.objects.filter(email=value).exclude(pk=user.pk).exists():
-            raise serializers.ValidationError("A user with this email already exists.")
+            raise serializers.ValidationError(
+                "A user with this email already exists."
+                )
         return value
 
 

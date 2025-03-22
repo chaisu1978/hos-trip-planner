@@ -1,16 +1,11 @@
 import uuid
 import os
-
-from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import (
     AbstractBaseUser,
     BaseUserManager,
     PermissionsMixin
 )
-import django.utils.timezone as timezone
-from django.utils.timezone import now
-from django.core.validators import MaxValueValidator, MinValueValidator
 
 
 def profile_picture_file_path(instance, filename):
@@ -65,6 +60,7 @@ class UserManager(BaseUserManager):
             **extra_fields
             )
 
+
 class User(AbstractBaseUser, PermissionsMixin):
     """Custom User model with additional fields."""
     email = models.EmailField(max_length=255, unique=True)
@@ -82,14 +78,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
-    timezone = models.CharField(
-    max_length=100,
-    default='America/New_York'
-    )
-    UNIT_CHOICES = [
-    ('mi', 'Miles'),
-    ('km', 'Kilometers'),
-    ]
+    timezone = models.CharField(max_length=100, default='America/New_York')
+    UNIT_CHOICES = [('mi', 'Miles'), ('km', 'Kilometers'),]
     preferred_units = models.CharField(
         max_length=2,
         choices=UNIT_CHOICES,

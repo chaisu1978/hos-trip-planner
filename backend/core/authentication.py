@@ -1,6 +1,7 @@
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
 
+
 class CustomJWTAuthentication(JWTAuthentication):
     def get_user(self, validated_token):
         # If the token is public, skip user retrieval
@@ -12,7 +13,7 @@ class CustomJWTAuthentication(JWTAuthentication):
 
 
 class CustomJWTAuthenticationExtension(OpenApiAuthenticationExtension):
-    target_class = 'core.authentication.CustomJWTAuthentication'  # Full import path to your class
+    target_class = 'core.authentication.CustomJWTAuthentication'
     name = 'BearerAuth'
 
     def get_security_definition(self, auto_schema):

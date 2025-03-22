@@ -37,7 +37,7 @@ class UserAdmin(BaseUserAdmin):
                 'user_permissions',
             )
         }),
-        (_('Important dates'), {'fields': ('last_login', 'created_at', 'updated_at')}),
+        (_('Important dates'), {'fields': ('last_login', 'created_at', 'updated_at')}),  # noqa
     )
 
     add_fieldsets = (

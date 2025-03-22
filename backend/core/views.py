@@ -3,14 +3,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework import status
-from drf_spectacular.utils import extend_schema
-from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
-from rest_framework.parsers import JSONParser
 
 from .models import User
 from .serializers import (
@@ -51,6 +48,7 @@ class UserDetailView(RetrieveUpdateAPIView):
     def get_object(self):
         return self.request.user
 
+
 class RegisterUserView(APIView):
     """Register a new user."""
     permission_classes = [AllowAny]
@@ -69,10 +67,13 @@ class RegisterUserView(APIView):
 
         try:
             validate_password(data["password"])
-        except DjangoValidationError as e:  # Ensure this is Django's ValidationError
-            return Response({"error": e.messages}, status=status.HTTP_400_BAD_REQUEST)
+        except DjangoValidationError as e:
+            return Response(
+                {"error": e.messages},
+                status=status.HTTP_400_BAD_REQUEST
+                )
 
-        user = User.objects.create_user(
+        user = User.objects.create_user(  # noqa
             email=data["email"],
             first_name=data["first_name"],
             last_name=data["last_name"],
@@ -93,10 +94,10 @@ class ChangePasswordView(APIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = request.user
-        data = request.data
+        data = request.data  # noqa
 
         # Validate current password
-        if not user.check_password(serializer.validated_data["current_password"]):
+        if not user.check_password(serializer.validated_data["current_password"]):  # noqa
             return Response(
                 {"error": "Current password is incorrect."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -121,7 +122,10 @@ class ChangePasswordView(APIView):
                 status=status.HTTP_200_OK,
             )
         except ValidationError as e:
-            return Response({"error": e.messages}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": e.messages},
+                status=status.HTTP_400_BAD_REQUEST
+                )
 
 
 class ProfileImageUploadView(APIView):
@@ -134,10 +138,16 @@ class ProfileImageUploadView(APIView):
         file = request.FILES.get('profile_picture')
 
         if not file:
-            return Response({"error": "No file provided."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "No file provided."},
+                status=status.HTTP_400_BAD_REQUEST
+                )
 
         # Save the file to the user's profile
         user.profile_picture = file
         user.save()
 
-        return Response({"message": "Profile picture updated successfully."}, status=status.HTTP_200_OK)
+        return Response(
+            {"message": "Profile picture updated successfully."},
+            status=status.HTTP_200_OK
+            )
