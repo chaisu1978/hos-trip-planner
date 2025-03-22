@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'django_filters',
     "corsheaders",
     "django_rest_passwordreset",
+    'core',
 ]
 
 MIDDLEWARE = [
@@ -123,12 +124,12 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Custom user model
-# AUTH_USER_MODEL = 'core.User'
+AUTH_USER_MODEL = 'core.User'
 
 # Authentication backends (default is sufficient for most cases)
-# AUTHENTICATION_BACKENDS = (
-#     'django.contrib.auth.backends.ModelBackend',
-# )
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+)
 
 
 
@@ -156,8 +157,8 @@ SIMPLE_JWT = {
 }
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'BargainBuddy API',
-    'DESCRIPTION': 'API documentation for the BargainBuddy project.',
+    'TITLE': 'HOS Trip Planner API',
+    'DESCRIPTION': 'API documentation for the HOS Trip Planner project.',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'COMPONENT_SPLIT_REQUEST': True,

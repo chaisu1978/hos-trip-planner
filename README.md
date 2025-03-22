@@ -29,19 +29,22 @@ Authentication is handled with JWT via `djangorestframework-simplejwt`.
 
 Create a `.env` file in the root of the project with the following variables:
 
-DJANGO_DEBUG=True  
-DJANGO_ALLOWED_HOSTS=\*  
-DB_HOST=db  
-DB_NAME=devdb  
-DB_USER=devuser  
-DB_PASS=devpass  
-DJANGO_SECRET_KEY="django-key-goes-here"  
-POSTGRES_DB=devdb  
-POSTGRES_USER=devuser  
-POSTGRES_PASSWORD=devpass  
+```bash
+DJANGO_DEBUG=True
+DJANGO_ALLOWED_HOSTS=\*
+DB_HOST=db
+DB_NAME=devdb
+DB_USER=devuser
+DB_PASS=devpass
+DJANGO_SECRET_KEY="django-key-goes-here"
+POSTGRES_DB=devdb
+POSTGRES_USER=devuser
+POSTGRES_PASSWORD=devpass
 DOMAIN='http://localhost:8000'
 CORS_ORIGINS=http://localhost:5173
 CSRF_TRUSTED=http://localhost:5173
+
+```
 
 ---
 
@@ -49,7 +52,9 @@ CSRF_TRUSTED=http://localhost:5173
 
 Create an `.env.development` file inside the `/frontend` directory with the following:
 
+```bash
 VITE_API_BASE_URL=http://localhost:8000/api
+```
 
 ---
 
