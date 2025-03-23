@@ -18,6 +18,7 @@ class UserSerializer(serializers.ModelSerializer):
             'push_notifications',
             'timezone',
             'preferred_units',
+            'theme_mode',
             'is_superuser',
             'created_at',
             'updated_at',

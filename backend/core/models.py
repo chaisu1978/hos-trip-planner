@@ -85,6 +85,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         choices=UNIT_CHOICES,
         default='mi',
     )
+    theme_mode = models.CharField(
+        max_length=20,
+        choices=[("light", "Light"), ("dark", "Dark")],
+        default="light"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
