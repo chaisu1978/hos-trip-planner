@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "django_rest_passwordreset",
     'core',
+    'trips',
 ]
 
 MIDDLEWARE = [
