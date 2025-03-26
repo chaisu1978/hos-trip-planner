@@ -32,7 +32,8 @@ class Trip(models.Model):
     planned_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Trip by {self.user.email} on {self.planned_at.date()}"
+        user_email = self.user.email if self.user else "Anonymous"
+        return f"Trip by {user_email} on {self.planned_at.date()}"
 
 
 class TripLeg(models.Model):
@@ -41,12 +42,12 @@ class TripLeg(models.Model):
     leg_order = models.PositiveIntegerField()
 
     start_label = models.CharField(max_length=255)
-    start_lat = models.FloatField()
-    start_lon = models.FloatField()
+    start_lat = models.FloatField(null=True, blank=True)
+    start_lon = models.FloatField(null=True, blank=True)
 
     end_label = models.CharField(max_length=255)
-    end_lat = models.FloatField()
-    end_lon = models.FloatField()
+    end_lat = models.FloatField(null=True, blank=True)
+    end_lon = models.FloatField(null=True, blank=True)
 
     distance_miles = models.DecimalField(max_digits=7, decimal_places=2)
     duration_hours = models.DecimalField(max_digits=5, decimal_places=2)

@@ -1,7 +1,12 @@
 from .ors import get_route
 from ..models import Trip, TripLeg, TripSegmentStep
 from decimal import Decimal
+from .hos import chunk_legs_by_hos
 
+def _resolve_label(leg_data, which: str, trip: Trip) -> str:
+    if leg_data.get(f"{which}_label"):
+        return leg_data[f"{which}_label"]
+    return _label_from_index(leg_data["leg_order"], trip)
 
 def plan_trip(trip: Trip):
     """
@@ -29,38 +34,37 @@ def plan_trip(trip: Trip):
     segments = result["segments"]
     total_legs = len(segments)
 
-    for i, segment in enumerate(segments):
-        start = coordinates[i]
-        end = coordinates[i + 1]
+    hos_legs = chunk_legs_by_hos(segments, coordinates, Decimal(trip.current_cycle_hours))
 
-        # Create leg
+    for leg_data in hos_legs:
+        leg_data.pop("start_label", None)
+        leg_data.pop("end_label", None)
+        leg_data.pop("segment_index", None)
+
         leg = TripLeg.objects.create(
             trip=trip,
-            leg_order=i,
-            start_label=_label_from_index(i, trip),
-            start_lat=start[1],
-            start_lon=start[0],
-            end_label=_label_from_index(i + 1, trip),
-            end_lat=end[1],
-            end_lon=end[0],
-            distance_miles=Decimal(segment["distance"]),
-            duration_hours=Decimal(segment["duration"]) / 3600,
+            **leg_data,
+            start_label=_resolve_label(leg_data, "start", trip),
+            end_label=_resolve_label(leg_data, "end", trip),
         )
 
-        # Add steps (optional now, but nice)
-        for j, step in enumerate(segment.get("steps", [])):
-            TripSegmentStep.objects.create(
-                leg=leg,
-                step_order=j,
-                instruction=step.get("instruction", ""),
-                distance_meters=Decimal(step.get("distance", 0)),
-                duration_seconds=Decimal(step.get("duration", 0)),
-                start_lat=start[1],
-                start_lon=start[0],
-                end_lat=end[1],
-                end_lon=end[0],
-                waypoints=step.get("way_points", []),
-            )
+        # only add steps if not a rest stop
+        if not leg.is_rest_stop:
+            seg_idx = leg_data.get("segment_index")
+            if seg_idx is not None:
+                for j, step in enumerate(segments[seg_idx].get("steps", [])):
+                    TripSegmentStep.objects.create(
+                        leg=leg,
+                        step_order=j,
+                        instruction=step.get("instruction", ""),
+                        distance_meters=Decimal(step.get("distance", 0)),
+                        duration_seconds=Decimal(str(step.get("duration") or "0")),
+                        start_lat=leg.start_lat,
+                        start_lon=leg.start_lon,
+                        end_lat=leg.end_lat,
+                        end_lon=leg.end_lon,
+                        waypoints=step.get("way_points", []),
+                    )
 
 
 def _label_from_index(i, trip: Trip) -> str:
