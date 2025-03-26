@@ -11,6 +11,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/core/', include('core.urls')),
+    path('api/trips/', include('trips.urls')),
     # drf-spectacular schema and documentation URLs
     path('api/schema/', SpectacularAPIView.as_view(), name='api-schema'),
     path(
