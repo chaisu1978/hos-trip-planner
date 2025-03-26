@@ -6,6 +6,7 @@ from datetime import timedelta
 from django.utils import timezone
 
 def _resolve_label(leg_data, which: str, trip: Trip) -> str:
+    """ Helper to generate a label for a leg based on its data """
     if leg_data.get(f"{which}_label"):
         return leg_data[f"{which}_label"]
     return _label_from_index(leg_data["leg_order"], trip)
@@ -84,6 +85,7 @@ def plan_trip(trip: Trip):
 
 
 def _label_from_index(i, trip: Trip) -> str:
+    """ Helper to generate a label for a leg based on its index """
     if i == 0:
         return f"Start: {trip.current_location_label}"
     elif i == 1:
