@@ -3,7 +3,13 @@ from django.conf import settings
 
 
 class Trip(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="trips")
+    user = models.ForeignKey(
+    settings.AUTH_USER_MODEL,
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    related_name="trips"
+)
     name = models.CharField(max_length=100, blank=True)
 
     current_location_label = models.CharField(max_length=255)
@@ -64,7 +70,7 @@ class TripSegmentStep(models.Model):
 
     instruction = models.TextField(blank=True, default="")
     distance_meters = models.DecimalField(max_digits=7, decimal_places=2)
-    duration_seconds = models.DecimalField(max_digits=6, decimal_places=2)
+    duration_seconds = models.DecimalField(max_digits=7, decimal_places=2)
 
     start_lat = models.FloatField()
     start_lon = models.FloatField()
