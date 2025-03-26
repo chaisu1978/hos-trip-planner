@@ -2,11 +2,14 @@ from .ors import get_route
 from ..models import Trip, TripLeg, TripSegmentStep
 from decimal import Decimal
 from .hos import chunk_legs_by_hos
+from datetime import timedelta
+from django.utils import timezone
 
 def _resolve_label(leg_data, which: str, trip: Trip) -> str:
     if leg_data.get(f"{which}_label"):
         return leg_data[f"{which}_label"]
     return _label_from_index(leg_data["leg_order"], trip)
+
 
 def plan_trip(trip: Trip):
     """
@@ -36,11 +39,27 @@ def plan_trip(trip: Trip):
 
     hos_legs = chunk_legs_by_hos(segments, coordinates, Decimal(trip.current_cycle_hours))
 
+    # Use trip.departure_time as the starting point for the timeline
+    current_time = trip.departure_time
+    cycle_hours = Decimal(trip.current_cycle_hours)
+
     for leg_data in hos_legs:
+        seg_idx = leg_data.get("segment_index")
+        # Remove unnecessary keys for the creation of the TripLeg
         leg_data.pop("start_label", None)
         leg_data.pop("end_label", None)
         leg_data.pop("segment_index", None)
 
+        # Set departure time and calculate arrival time for each leg
+        duration_hrs = leg_data["duration_hours"]
+        duration_seconds = float(duration_hrs) * 3600
+
+        # Set the departure and arrival time for this leg
+        leg_data["departure_time"] = current_time
+        current_time += timedelta(seconds=duration_seconds)  # Add duration of leg
+        leg_data["arrival_time"] = current_time
+
+        # Create the TripLeg instance
         leg = TripLeg.objects.create(
             trip=trip,
             **leg_data,
@@ -48,28 +67,27 @@ def plan_trip(trip: Trip):
             end_label=_resolve_label(leg_data, "end", trip),
         )
 
-        # only add steps if not a rest stop
-        if not leg.is_rest_stop:
-            seg_idx = leg_data.get("segment_index")
-            if seg_idx is not None:
-                for j, step in enumerate(segments[seg_idx].get("steps", [])):
-                    TripSegmentStep.objects.create(
-                        leg=leg,
-                        step_order=j,
-                        instruction=step.get("instruction", ""),
-                        distance_meters=Decimal(step.get("distance", 0)),
-                        duration_seconds=Decimal(str(step.get("duration") or "0")),
-                        start_lat=leg.start_lat,
-                        start_lon=leg.start_lon,
-                        end_lat=leg.end_lat,
-                        end_lon=leg.end_lon,
-                        waypoints=step.get("way_points", []),
-                    )
+        if not leg.is_rest_stop and seg_idx is not None:
+            for j, step in enumerate(segments[seg_idx].get("steps", [])):
+                TripSegmentStep.objects.create(
+                    leg=leg,
+                    step_order=j,
+                    instruction=step.get("instruction", ""),
+                    distance_meters=Decimal(step.get("distance", 0)),
+                    duration_seconds=Decimal(str(step.get("duration") or "0")),
+                    start_lat=leg.start_lat,
+                    start_lon=leg.start_lon,
+                    end_lat=leg.end_lat,
+                    end_lon=leg.end_lon,
+                    waypoints=step.get("way_points", []),
+                )
 
 
 def _label_from_index(i, trip: Trip) -> str:
-    return {
-        0: trip.current_location_label,
-        1: trip.pickup_location_label,
-        2: trip.dropoff_location_label,
-    }.get(i, f"Point {i}")
+    if i == 0:
+        return f"Start: {trip.current_location_label}"
+    elif i == 1:
+        return f"Pickup: {trip.pickup_location_label}"
+    elif i == 2 or i == 3:
+        return f"Dropoff: {trip.dropoff_location_label}"
+    return f"Segment {i + 1}"

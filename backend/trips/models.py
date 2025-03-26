@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-
+from django.utils import timezone
 
 class Trip(models.Model):
     user = models.ForeignKey(
@@ -30,6 +30,7 @@ class Trip(models.Model):
     planned_duration_hours = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
 
     planned_at = models.DateTimeField(auto_now_add=True)
+    departure_time = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         user_email = self.user.email if self.user else "Anonymous"
