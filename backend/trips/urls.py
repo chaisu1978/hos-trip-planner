@@ -1,7 +1,21 @@
-from rest_framework.routers import DefaultRouter
+# trips/urls.py
+
+from django.urls import path
 from .views import TripViewSet
 
-router = DefaultRouter()
-router.register(r"trips", TripViewSet, basename="trips")
+trip_list = TripViewSet.as_view({
+    "get": "list",
+    "post": "create"
+})
 
-urlpatterns = router.urls
+trip_detail = TripViewSet.as_view({
+    "get": "retrieve",
+    "put": "update",
+    "patch": "partial_update",
+    "delete": "destroy"
+})
+
+urlpatterns = [
+    path("trips/", trip_list, name="trip-list"),
+    path("trips/<int:pk>/", trip_detail, name="trip-detail"),
+]
