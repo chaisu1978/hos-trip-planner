@@ -2,6 +2,23 @@ from collections import defaultdict
 from datetime import datetime
 from django.utils.timezone import localtime
 
+
+def get_leg_type(leg):
+    if leg.is_rest_stop:
+        return "rest"
+    if leg.is_fuel_stop:
+        return "fuel"
+    if "30-minute" in leg.notes.lower():
+        return "break"
+    if "pickup" in leg.notes.lower():
+        return "pickup"
+    if "dropoff" in leg.notes.lower():
+        return "dropoff"
+    if leg.distance_miles > 0:
+        return "drive"
+    return "other"
+
+
 def generate_daily_logs(trip):
     """
     Generates structured HOS daily log data per FMCSA requirements.
@@ -16,7 +33,7 @@ def generate_daily_logs(trip):
 
         logs_by_date[date_key].append({
             "leg_id": leg.id,
-            "status": leg.leg_type,  # "drive", "rest", "pickup", etc.
+            "status": get_leg_type(leg),  # ✅ Use helper here
             "start": start.strftime("%H:%M"),
             "end": end.strftime("%H:%M"),
             "label": leg.start_label,

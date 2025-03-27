@@ -85,11 +85,11 @@ def plan_trip(trip: Trip):
 
 
 def _label_from_index(i, trip: Trip) -> str:
-    """ Helper to generate a label for a leg based on its index """
-    if i == 0:
-        return f"Start: {trip.current_location_label}"
-    elif i == 1:
-        return f"Pickup: {trip.pickup_location_label}"
-    elif i == 2 or i == 3:
-        return f"Dropoff: {trip.dropoff_location_label}"
-    return f"Segment {i + 1}"
+    labels = [
+        f"Start: {trip.current_location_label}",
+        f"Pickup: {trip.pickup_location_label}",
+        f"Dropoff: {trip.dropoff_location_label}",
+    ]
+    if i < len(labels):
+        return labels[i]
+    return f"From {trip.pickup_location_label} to {trip.dropoff_location_label}"

@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import Trip, TripLeg, TripSegmentStep
+from drf_spectacular.utils import extend_schema_field
+
 
 class TripSegmentStepSerializer(serializers.ModelSerializer):
     """ Serializer for Trip Segment Steps"""
@@ -10,7 +12,6 @@ class TripSegmentStepSerializer(serializers.ModelSerializer):
 
 
 class TripLegSerializer(serializers.ModelSerializer):
-    """ Serializer for Trip Legs"""
     steps = TripSegmentStepSerializer(many=True, read_only=True)
     leg_type = serializers.SerializerMethodField()
 
@@ -19,7 +20,8 @@ class TripLegSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ["trip"]
 
-    def get_leg_type(self, obj):
+    @extend_schema_field(serializers.CharField())  # 👈 Add this line
+    def get_leg_type(self, obj) -> str:
         if obj.is_rest_stop:
             return "rest"
         if obj.is_fuel_stop:
@@ -34,6 +36,7 @@ class TripLegSerializer(serializers.ModelSerializer):
             return "drive"
         return "other"
 
+
 class TripSerializer(serializers.ModelSerializer):
     """ Serializer for Trips"""
     legs = TripLegSerializer(many=True, read_only=True)
@@ -42,3 +45,22 @@ class TripSerializer(serializers.ModelSerializer):
         model = Trip
         fields = "__all__"
         read_only_fields = ["user", "planned_distance_miles", "planned_duration_hours", "planned_at"]
+
+
+class DutyPeriodSerializer(serializers.Serializer):
+    leg_id = serializers.IntegerField()
+    status = serializers.CharField()
+    start = serializers.CharField()
+    end = serializers.CharField()
+    label = serializers.CharField()
+    location = serializers.CharField()
+    miles = serializers.FloatField()
+    hours = serializers.FloatField()
+    notes = serializers.CharField()
+
+
+class DailyLogSheetSerializer(serializers.Serializer):
+    date = serializers.DateField()
+    total_miles = serializers.FloatField()
+    total_hours = serializers.FloatField()
+    duty_periods = DutyPeriodSerializer(many=True)

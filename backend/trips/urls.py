@@ -1,21 +1,10 @@
-# trips/urls.py
-
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from .views import TripViewSet
 
-trip_list = TripViewSet.as_view({
-    "get": "list",
-    "post": "create"
-})
-
-trip_detail = TripViewSet.as_view({
-    "get": "retrieve",
-    "put": "update",
-    "patch": "partial_update",
-    "delete": "destroy"
-})
+router = DefaultRouter()
+router.register(r"trips", TripViewSet, basename="trip")
 
 urlpatterns = [
-    path("trips/", trip_list, name="trip-list"),
-    path("trips/<int:pk>/", trip_detail, name="trip-detail"),
+    path("", include(router.urls)),
 ]
