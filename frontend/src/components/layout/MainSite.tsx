@@ -4,7 +4,7 @@ import AuthGuard from "../common/AuthGuard";
 const MainSite = () => {
   return (
     <>
-      <h1>Homepage</h1>
+      <h1>Homepage Placeholder</h1>
     </>
   );
 };
