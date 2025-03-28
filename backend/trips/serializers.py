@@ -48,19 +48,18 @@ class TripSerializer(serializers.ModelSerializer):
 
 
 class DutyPeriodSerializer(serializers.Serializer):
-    leg_id = serializers.IntegerField()
     status = serializers.CharField()
     start = serializers.CharField()
     end = serializers.CharField()
-    label = serializers.CharField()
-    location = serializers.CharField()
-    miles = serializers.FloatField()
-    hours = serializers.FloatField()
-    notes = serializers.CharField()
 
 
 class DailyLogSheetSerializer(serializers.Serializer):
     date = serializers.DateField()
+    month = serializers.CharField()
+    day = serializers.CharField()
+    year = serializers.CharField()
+    from_location = serializers.CharField()
+    to_location = serializers.CharField()
     total_miles = serializers.FloatField()
     total_hours = serializers.FloatField()
     duty_periods = DutyPeriodSerializer(many=True)
