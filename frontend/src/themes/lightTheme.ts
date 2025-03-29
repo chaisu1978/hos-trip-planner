@@ -14,10 +14,10 @@ const lightTheme = createTheme({
       contrastText: paletteComponents.neutral[300],
     },
     highlight: {
-      main: paletteComponents.secondary[300],
-      light: paletteComponents.secondary[200],
-      dark: paletteComponents.secondary[500],
-      contrastText: paletteComponents.neutral[800],
+      main: paletteComponents.neutral[600],
+      light: paletteComponents.neutral[500],
+      dark: paletteComponents.neutral[700],
+      contrastText: paletteComponents.neutral[300],
     },
     background: {
       default: paletteComponents.neutral[300],
@@ -35,11 +35,26 @@ const lightTheme = createTheme({
     warning: { main: paletteComponents.orange[500] },
     info: { main: paletteComponents.blue[500] },
     success: { main: paletteComponents.green[500] },
-    divider: paletteComponents.secondary[700],
+    divider: paletteComponents.neutral[700],
   },
   typography: {
-    fontFamily: '"Open Sans", "Roboto", "Helvetica", "Arial", sans-serif',
-    h1: { fontFamily: '"Montserrat", sans-serif' },
+    fontFamily: '"Roboto", sans-serif',
+    h1: { fontFamily: '"Playfair Display", serif' },
+    h2: { fontFamily: '"Playfair Display", serif' },
+    h3: { fontFamily: '"Playfair Display", serif' },
+    h4: { fontFamily: '"Playfair Display", serif' },
+    h5: { fontFamily: '"Playfair Display", serif' },
+    h6: { fontFamily: '"Playfair Display", serif' },
+
+    subtitle1: { fontFamily: '"Playfair Display", serif' },
+    subtitle2: { fontFamily: '"Playfair Display", serif' },
+
+    body1: { fontFamily: '"Roboto", sans-serif' },
+    body2: { fontFamily: '"Roboto", sans-serif' },
+
+    button: { fontFamily: '"Roboto", sans-serif' },
+    caption: { fontFamily: '"Roboto", sans-serif' },
+    overline: { fontFamily: '"Roboto", sans-serif'},
   },
 });
 

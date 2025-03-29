@@ -38,8 +38,23 @@ const darkTheme = createTheme({
     divider: paletteComponents.secondary[200],
   },
   typography: {
-    fontFamily: '"Open Sans", "Roboto", "Helvetica", "Arial", sans-serif',
-    h1: { fontFamily: '"Montserrat", sans-serif' },
+    fontFamily: '"Roboto", sans-serif',
+    h1: { fontFamily: '"Playfair Display", serif' },
+    h2: { fontFamily: '"Playfair Display", serif' },
+    h3: { fontFamily: '"Playfair Display", serif' },
+    h4: { fontFamily: '"Playfair Display", serif' },
+    h5: { fontFamily: '"Playfair Display", serif' },
+    h6: { fontFamily: '"Playfair Display", serif' },
+
+    subtitle1: { fontFamily: '"Playfair Display", serif' },
+    subtitle2: { fontFamily: '"Playfair Display", serif' },
+
+    body1: { fontFamily: '"Roboto", sans-serif' },
+    body2: { fontFamily: '"Roboto", sans-serif' },
+
+    button: { fontFamily: '"Roboto", sans-serif' },
+    caption: { fontFamily: '"Roboto", sans-serif' },
+    overline: { fontFamily: '"Roboto", sans-serif'},
   },
 });
 

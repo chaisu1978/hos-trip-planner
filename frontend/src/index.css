@@ -1,3 +1,21 @@
 /* src/index.css */
 @import "leaflet/dist/leaflet.css";
 @import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
+
+/* import fonts from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Playfair Display", serif;
+}
+
+body {
+  font-family: 'Roboto', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+p {
+  font-family: 'Roboto', sans-serif;
+}

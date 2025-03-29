@@ -11,6 +11,7 @@ declare module '@mui/material/styles' {
   interface Palette {
     tertiary: Palette['primary'];
     searchbox: Palette['primary'];
+    highlight: Palette['primary'];
   }
 
   interface PaletteOptions {
