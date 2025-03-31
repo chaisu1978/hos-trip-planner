@@ -7,6 +7,8 @@ import ArchiveIcon from "@mui/icons-material/Archive";
 import UnarchiveIcon from "@mui/icons-material/Unarchive";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
+import LocationDrawer from "../trip/LocationDrawer";
+
 // leaflet
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 
@@ -27,9 +29,23 @@ const TripPlanPage = () => {
     null
   );
   const [cycleHours, setCycleHours] = useState<number>(0);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerType, setDrawerType] = useState<
+    "current" | "pickup" | "dropoff" | null
+  >(null);
 
   const handleOpenDrawer = (type: "current" | "pickup" | "dropoff") => {
-    // Will open the right Drawer for map selection
+    setDrawerType(type);
+    setDrawerOpen(true);
+  };
+
+  const handleLocationSelect = (location: LocationData) => {
+    if (drawerType === "current") setCurrentLocation(location);
+    else if (drawerType === "pickup") setPickupLocation(location);
+    else if (drawerType === "dropoff") setDropoffLocation(location);
+
+    setDrawerOpen(false);
+    setDrawerType(null);
   };
 
   return (
@@ -73,19 +89,19 @@ const TripPlanPage = () => {
           icon={<PersonPinCircleIcon />}
           label="SET CURRENT LOCATION"
           description="Let us know where you're starting from. You can use your current GPS location or manually enter it."
-          onClick={() => {}}
+          onClick={() => handleOpenDrawer("current")}
         />
         <LocationInput
           icon={<ArchiveIcon />}
           label="SET PICKUP LOCATION"
           description="Where are you picking up your load? Includes a one hour loading delay in trip plan."
-          onClick={() => {}}
+          onClick={() => handleOpenDrawer("pickup")}
         />
         <LocationInput
           icon={<UnarchiveIcon />}
           label="SET DROPOFF LOCATION"
           description="Where are you delivering your load? Includes a one hour unloading delay in trip plan."
-          onClick={() => {}}
+          onClick={() => handleOpenDrawer("dropoff")}
         />
 
         <CycleHoursInput value={cycleHours} onChange={setCycleHours} />
@@ -181,6 +197,12 @@ const TripPlanPage = () => {
           Trip Details will go here and can interact with the map above.
         </Box>
       </Box>
+      <LocationDrawer
+        open={drawerOpen}
+        type={drawerType ?? "current"}
+        onClose={() => setDrawerOpen(false)}
+        onSelect={handleLocationSelect}
+      />
     </Box>
   );
 };
