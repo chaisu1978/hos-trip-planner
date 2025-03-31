@@ -7,6 +7,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../store";
 import { logout } from "../../services/auth";
 import { Link } from "react-router-dom";
+import LightLogo from "../../assets/hos-icon-light.svg";
 
 const Header = () => {
   const isAuthenticated = useSelector(
@@ -21,17 +22,47 @@ const Header = () => {
     <AppBar position="sticky">
       <Toolbar>
         {/* Left side: Logo or Title */}
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>
-          HOS Trip Planner
-        </Typography>
-
+        <Link to="/">
+          <img
+            src={LightLogo}
+            alt="HOS Trip Planner Logo"
+            style={{
+              height: "35px",
+              marginRight: "16px",
+            }}
+          />
+        </Link>
+        {/* Spacer that always pushes buttons to the right */}
+        <Box sx={{ flexGrow: 1 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              display: { xs: "none", sm: "block" },
+            }}
+          >
+            HOS Trip Planner
+          </Typography>
+        </Box>
         {/* Right side: conditional buttons */}
         {!isAuthenticated ? (
           <Box>
-            <Button color="inherit" component={Link} to="/login">
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              component={Link}
+              to="/login"
+              sx={{ marginRight: 1 }}
+            >
               Login
             </Button>
-            <Button color="inherit" component={Link} to="/sign-up">
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              component={Link}
+              to="/sign-up"
+            >
               Sign Up
             </Button>
           </Box>
