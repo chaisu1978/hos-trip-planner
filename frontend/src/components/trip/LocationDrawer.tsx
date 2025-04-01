@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   Drawer,
   Box,
@@ -5,7 +6,6 @@ import {
   Button,
   Divider,
   IconButton,
-  useTheme,
   TextField,
   CircularProgress,
   Autocomplete,
@@ -16,12 +16,14 @@ import type L from "leaflet";
 import { useRef, useState, useCallback } from "react";
 import { debounce } from "../../utils/debounce";
 import apiClient from "../../services/auth";
+import { useSnackbar } from "../common/SnackbarProvider";
 
 interface Props {
   open: boolean;
   type: "current" | "pickup" | "dropoff";
   onClose: () => void;
   onSelect: (location: { label: string; lat: number; lon: number }) => void;
+  initialValue?: { label: string; lat: number; lon: number };
 }
 
 const fetchLocations = async (
@@ -63,13 +65,21 @@ const fetchReverseGeocode = async (
   }
 };
 
-const LocationDrawer = ({ open, type, onClose, onSelect }: Props) => {
-  const theme = useTheme();
+const LocationDrawer = ({
+  open,
+  type,
+  onClose,
+  onSelect,
+  initialValue,
+}: Props) => {
   const [center, setCenter] = useState<[number, number]>([39.8283, -98.5795]);
   const mapRef = useRef<L.Map | null>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [locating, setLocating] = useState(false);
+
+  const { showSnackbar } = useSnackbar();
 
   const MapListener = () => {
     const map = useMapEvents({
@@ -110,6 +120,35 @@ const LocationDrawer = ({ open, type, onClose, onSelect }: Props) => {
     setResults([]);
   };
 
+  // When the drawer opens, update query + center
+  useEffect(() => {
+    if (!open) return;
+
+    if (initialValue) {
+      const latLng: [number, number] = [initialValue.lat, initialValue.lon];
+      setQuery(initialValue.label);
+      setCenter(latLng);
+
+      // Delay setView until map is mounted
+      setTimeout(() => {
+        mapRef.current?.setView(latLng, 11);
+      }, 250);
+    } else {
+      const fallback: [number, number] = [39.8283, -98.5795];
+      setQuery("");
+      setCenter(fallback);
+
+      setTimeout(() => {
+        mapRef.current?.setView(fallback, 5);
+      }, 250);
+    }
+
+    // Trigger resize after drawer opens
+    setTimeout(() => {
+      mapRef.current?.invalidateSize();
+    }, 500);
+  }, [open, initialValue]);
+
   return (
     <Drawer
       anchor="right"
@@ -145,6 +184,44 @@ const LocationDrawer = ({ open, type, onClose, onSelect }: Props) => {
 
       {/* Body */}
       <Box p={2} display="flex" flexDirection="column" gap={2}>
+        {type === "current" && (
+          <Button
+            variant="contained"
+            size="small"
+            disabled={locating}
+            onClick={async () => {
+              setLocating(true);
+              navigator.geolocation.getCurrentPosition(
+                async (pos) => {
+                  const { latitude, longitude } = pos.coords;
+                  const label = await fetchReverseGeocode(latitude, longitude);
+                  setCenter([latitude, longitude]);
+                  setQuery(label);
+                  mapRef.current?.setView([latitude, longitude], 11);
+                  setLocating(false);
+
+                  showSnackbar("Location detected successfully!", "success"); // SUCCESS SNACKBAR
+                },
+                (error) => {
+                  console.error("Geolocation error:", error);
+                  setLocating(false);
+
+                  showSnackbar(
+                    "Unable to retrieve your location. Please check permissions or try again.",
+                    "error"
+                  ); // ERROR SNACKBAR
+                }
+              );
+            }}
+            startIcon={
+              locating ? (
+                <CircularProgress color="inherit" size={16} />
+              ) : undefined
+            }
+          >
+            {locating ? "Getting Location..." : "Use My Location"}
+          </Button>
+        )}
         <Autocomplete
           freeSolo
           disableClearable
@@ -224,7 +301,15 @@ const LocationDrawer = ({ open, type, onClose, onSelect }: Props) => {
           Drag the map to place the pin on your desired location.
         </Typography>
 
-        <Button variant="contained" color="primary" onClick={handleConfirm}>
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={handleConfirm}
+          sx={{
+            borderRadius: "24px",
+            padding: "8px",
+          }}
+        >
           Confirm Location
         </Button>
       </Box>

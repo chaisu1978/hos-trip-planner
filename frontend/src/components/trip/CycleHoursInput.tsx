@@ -12,7 +12,7 @@ const CycleHoursInput = ({ value, onChange }: CycleHoursInputProps) => {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = Number(e.target.value);
+    const val = parseFloat(e.target.value);
     if (!isNaN(val) && val >= 0 && val <= 70) {
       onChange(val);
     }
@@ -54,25 +54,25 @@ const CycleHoursInput = ({ value, onChange }: CycleHoursInputProps) => {
         </Typography>
       </Box>
       <Typography fontSize={12} align="center">
-        How many HOS hours have you used in your current 70-hour/8-day cycle?
+        Hours of Service used in your current 70-hour/8-day cycle?
       </Typography>
       <Box
         display={"flex"}
         flexDirection={"row"}
         justifyContent={"space-between"}
-        alignItems={"flex-start"}
+        alignItems={"center"}
         width={"100%"}
       >
         <Slider
           value={value}
           min={0}
           max={70}
+          step={0.25}
           onChange={handleSliderChange}
           sx={{
             width: "75%",
             backgroundColor: "primary.main",
             margin: "4px 8px 0 8px",
-            padding: "14px 0px",
             color: "highlight.contrastText",
             // Shadow like a button
             boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
@@ -82,7 +82,7 @@ const CycleHoursInput = ({ value, onChange }: CycleHoursInputProps) => {
           type="number"
           value={value}
           onChange={handleInputChange}
-          inputProps={{ min: 0, max: 70 }}
+          inputProps={{ min: 0, max: 70, step: 0.25 }}
           label="Hours"
           size="small"
           sx={{

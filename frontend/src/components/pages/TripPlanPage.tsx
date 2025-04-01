@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Box, Typography, Button, CircularProgress } from "@mui/material";
+import { useEffect } from "react";
+import {
+  useTheme,
+  Box,
+  Typography,
+  Button,
+  CircularProgress,
+} from "@mui/material";
 import PersonPinCircleIcon from "@mui/icons-material/PersonPinCircle";
 import LocationInput from "../trip/LocationInput";
 import CycleHoursInput from "../trip/CycleHoursInput";
@@ -8,9 +15,12 @@ import UnarchiveIcon from "@mui/icons-material/Unarchive";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
 import LocationDrawer from "../trip/LocationDrawer";
+import { createThemedMarkerIcon } from "../../utils/createThemedMarkerIcon";
 
 // leaflet
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { motion } from "framer-motion";
 
 interface LocationData {
   label: string;
@@ -33,6 +43,11 @@ const TripPlanPage = () => {
   const [drawerType, setDrawerType] = useState<
     "current" | "pickup" | "dropoff" | null
   >(null);
+  const theme = useTheme();
+
+  const currentIcon = createThemedMarkerIcon(theme, "error");
+  const pickupIcon = createThemedMarkerIcon(theme, "info");
+  const dropoffIcon = createThemedMarkerIcon(theme, "success");
 
   const handleOpenDrawer = (type: "current" | "pickup" | "dropoff") => {
     setDrawerType(type);
@@ -47,6 +62,28 @@ const TripPlanPage = () => {
     setDrawerOpen(false);
     setDrawerType(null);
   };
+
+  const MapAutoFit = ({ points }: { points: [number, number][] }) => {
+    const map = useMap();
+
+    useEffect(() => {
+      if (points.length === 0) return;
+
+      const bounds = L.latLngBounds(points);
+      map.fitBounds(bounds, { padding: [50, 50] }); // optional padding
+    }, [points, map]);
+
+    return null;
+  };
+
+  const getLatLngTuple = (loc: LocationData | null): [number, number] | null =>
+    loc ? [loc.lat, loc.lon] : null;
+
+  const points = [
+    getLatLngTuple(currentLocation),
+    getLatLngTuple(pickupLocation),
+    getLatLngTuple(dropoffLocation),
+  ].filter(Boolean) as [number, number][];
 
   return (
     <Box
@@ -91,6 +128,7 @@ const TripPlanPage = () => {
           description="Let us know where you're starting from. You can use your current GPS location or manually enter it."
           value={currentLocation || undefined}
           onClick={() => handleOpenDrawer("current")}
+          onClear={() => setCurrentLocation(null)}
         />
         <LocationInput
           icon={<ArchiveIcon />}
@@ -98,6 +136,7 @@ const TripPlanPage = () => {
           description="Where are you picking up your load? Includes a one hour loading delay in trip plan."
           value={pickupLocation || undefined}
           onClick={() => handleOpenDrawer("pickup")}
+          onClear={() => setPickupLocation(null)}
         />
         <LocationInput
           icon={<UnarchiveIcon />}
@@ -105,23 +144,36 @@ const TripPlanPage = () => {
           value={dropoffLocation || undefined}
           description="Where are you delivering your load? Includes a one hour unloading delay in trip plan."
           onClick={() => handleOpenDrawer("dropoff")}
+          onClear={() => setDropoffLocation(null)}
         />
 
         <CycleHoursInput value={cycleHours} onChange={setCycleHours} />
 
-        <Button
-          variant="contained"
-          size="large"
-          color="secondary"
-          startIcon={<CalendarMonthIcon />}
-          fullWidth
-          sx={{
-            borderRadius: "24px",
-            padding: "8px",
+        <motion.div
+          animate={{
+            scale:
+              currentLocation && pickupLocation && dropoffLocation ? 1 : 0.95,
+            opacity:
+              currentLocation && pickupLocation && dropoffLocation ? 1 : 0.5,
           }}
+          transition={{ duration: 0.2 }}
+          style={{ width: "100%" }}
         >
-          PLAN TRIP
-        </Button>
+          <Button
+            variant="contained"
+            size="large"
+            color="secondary"
+            startIcon={<CalendarMonthIcon />}
+            fullWidth
+            disabled={!(currentLocation && pickupLocation && dropoffLocation)}
+            sx={{
+              borderRadius: "24px",
+              padding: "8px",
+            }}
+          >
+            PLAN TRIP
+          </Button>
+        </motion.div>
       </Box>
       <Box
         id="trip-summary"
@@ -153,6 +205,37 @@ const TripPlanPage = () => {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">
             OpenStreetMap</a> contributors'
           />
+          <MapAutoFit points={points} />
+          {currentLocation && (
+            <Marker
+              position={[currentLocation.lat, currentLocation.lon]}
+              icon={currentIcon}
+            >
+              <Popup>
+                <b>CURRENT LOCATION:</b> {currentLocation.label}
+              </Popup>
+            </Marker>
+          )}
+          {pickupLocation && (
+            <Marker
+              position={[pickupLocation.lat, pickupLocation.lon]}
+              icon={pickupIcon}
+            >
+              <Popup>
+                <b>PICKUP LOCATION:</b> {pickupLocation.label}
+              </Popup>
+            </Marker>
+          )}
+          {dropoffLocation && (
+            <Marker
+              position={[dropoffLocation.lat, dropoffLocation.lon]}
+              icon={dropoffIcon}
+            >
+              <Popup>
+                <b>DROPOFF LOCATION:</b> {dropoffLocation.label}
+              </Popup>
+            </Marker>
+          )}
         </MapContainer>
         <Box
           id="trip-summary-header"
@@ -201,10 +284,19 @@ const TripPlanPage = () => {
         </Box>
       </Box>
       <LocationDrawer
+        // key forces remount on drawerType change
+        key={drawerType}
         open={drawerOpen}
         type={drawerType ?? "current"}
         onClose={() => setDrawerOpen(false)}
         onSelect={handleLocationSelect}
+        initialValue={
+          drawerType === "current"
+            ? (currentLocation ?? undefined)
+            : drawerType === "pickup"
+              ? (pickupLocation ?? undefined)
+              : (dropoffLocation ?? undefined)
+        }
       />
     </Box>
   );

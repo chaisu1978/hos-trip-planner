@@ -8,6 +8,7 @@ import lightTheme from "./themes/lightTheme";
 import darkTheme from "./themes/darkTheme";
 import "./index.css";
 import "leaflet-defaulticon-compatibility";
+import { SnackbarProvider } from "./components/common/SnackbarProvider";
 
 const ThemedApp = () => {
   const isDarkMode = useSelector((state: RootState) => state.theme.isDarkMode);
@@ -15,7 +16,9 @@ const ThemedApp = () => {
   return (
     <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
       <CssBaseline />
-      <App />
+      <SnackbarProvider>
+        <App />
+      </SnackbarProvider>
     </ThemeProvider>
   );
 };
