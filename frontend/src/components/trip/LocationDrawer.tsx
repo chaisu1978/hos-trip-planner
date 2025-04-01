@@ -4,10 +4,18 @@ import {
   Typography,
   Button,
   Divider,
+  IconButton,
   useTheme,
+  TextField,
+  CircularProgress,
+  Autocomplete,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import { MapContainer, TileLayer, useMapEvents } from "react-leaflet";
-import { useEffect, useRef, useState } from "react";
+import type L from "leaflet";
+import { useRef, useState, useCallback } from "react";
+import { debounce } from "../../utils/debounce";
+import apiClient from "../../services/auth";
 
 interface Props {
   open: boolean;
@@ -16,33 +24,90 @@ interface Props {
   onSelect: (location: { label: string; lat: number; lon: number }) => void;
 }
 
+const fetchLocations = async (
+  value: string,
+  setResults: React.Dispatch<React.SetStateAction<any[]>>,
+  setLoading: React.Dispatch<React.SetStateAction<boolean>>
+) => {
+  if (value.length < 3) {
+    setResults([]);
+    setLoading(false);
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const { data } = await apiClient.get("/trips/geocode/search/", {
+      params: { q: value },
+    });
+    setResults(data);
+  } catch (error) {
+    console.error("Geocode search failed", error);
+    setResults([]);
+  }
+  setLoading(false);
+};
+
+const fetchReverseGeocode = async (
+  lat: number,
+  lon: number
+): Promise<string> => {
+  try {
+    const { data } = await apiClient.get("/trips/geocode/reverse/", {
+      params: { lat, lon },
+    });
+    return data.display_name || "Selected location";
+  } catch (error) {
+    console.error("Reverse geocode failed", error);
+    return "Selected location";
+  }
+};
+
 const LocationDrawer = ({ open, type, onClose, onSelect }: Props) => {
   const theme = useTheme();
-  const [center, setCenter] = useState<[number, number]>([39.8283, -98.5795]); // USA center
-  const mapRef = useRef(null);
+  const [center, setCenter] = useState<[number, number]>([39.8283, -98.5795]);
+  const mapRef = useRef<L.Map | null>(null);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Listen to map movement
   const MapListener = () => {
-    useMapEvents({
-      moveend: (e) => {
-        const c = e.target.getCenter();
+    const map = useMapEvents({
+      moveend: () => {
+        const c = map.getCenter();
         setCenter([c.lat, c.lng]);
       },
     });
+
+    if (!mapRef.current) {
+      mapRef.current = map;
+    }
+
     return null;
+  };
+
+  const debouncedSearch = useCallback(
+    debounce((value: string) => {
+      fetchLocations(value, setResults, setLoading);
+    }, 1200),
+    []
+  );
+
+  const handleResultClick = (lat: string, lon: string, displayName: string) => {
+    const latNum = parseFloat(lat);
+    const lonNum = parseFloat(lon);
+    setCenter([latNum, lonNum]);
+    mapRef.current?.setView([latNum, lonNum], 11);
+    setQuery(displayName);
+    setResults([]);
   };
 
   const handleConfirm = async () => {
     const [lat, lon] = center;
-
-    // Reverse geocode with OpenStreetMap's Nominatim
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
-    );
-    const data = await response.json();
-    const label = data.display_name || "Selected location";
-
+    const label = await fetchReverseGeocode(lat, lon);
     onSelect({ label, lat, lon });
+    setQuery("");
+    setResults([]);
   };
 
   return (
@@ -52,22 +117,78 @@ const LocationDrawer = ({ open, type, onClose, onSelect }: Props) => {
       onClose={onClose}
       PaperProps={{
         sx: {
-          width: { xs: "100%", sm: 480 },
+          width: { xs: "100%", sm: "45%" },
           backgroundColor: "background.paper",
         },
       }}
     >
-      <Box p={2} display="flex" flexDirection="column" gap={2}>
+      {/* Header */}
+      <Box
+        position="sticky"
+        top={0}
+        zIndex={10}
+        bgcolor="background.paper"
+        display="flex"
+        alignItems="center"
+        justifyContent="space-between"
+        px={2}
+        py={1}
+      >
         <Typography variant="h6">
           Select {type.toUpperCase()} Location
         </Typography>
-        <Divider />
+        <IconButton onClick={onClose} size="small">
+          <CloseIcon />
+        </IconButton>
+      </Box>
+      <Divider />
+
+      {/* Body */}
+      <Box p={2} display="flex" flexDirection="column" gap={2}>
+        <Autocomplete
+          freeSolo
+          disableClearable
+          options={results}
+          loading={loading}
+          inputValue={query}
+          getOptionLabel={(option) =>
+            typeof option === "string" ? option : option.display_name
+          }
+          onInputChange={(_, value) => {
+            setQuery(value);
+            debouncedSearch(value);
+          }}
+          onChange={(_, value) => {
+            if (value && value.lat && value.lon && value.display_name) {
+              handleResultClick(value.lat, value.lon, value.display_name);
+            }
+          }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Search location"
+              variant="outlined"
+              size="small"
+              InputProps={{
+                ...params.InputProps,
+                endAdornment: (
+                  <>
+                    {loading ? (
+                      <CircularProgress color="inherit" size={20} />
+                    ) : null}
+                    {params.InputProps.endAdornment}
+                  </>
+                ),
+              }}
+            />
+          )}
+        />
 
         <Box position="relative" height="400px">
           <MapContainer
             center={center}
             zoom={5}
-            scrollWheelZoom={true}
+            scrollWheelZoom={false}
             style={{ width: "100%", height: "100%", zIndex: 0 }}
             ref={mapRef}
           >
@@ -78,20 +199,24 @@ const LocationDrawer = ({ open, type, onClose, onSelect }: Props) => {
             <MapListener />
           </MapContainer>
 
-          {/* Static pin overlay */}
+          {/* Marker */}
           <Box
             sx={{
               position: "absolute",
               top: "50%",
               left: "50%",
-              width: "32px",
-              height: "32px",
               transform: "translate(-50%, -100%)",
               zIndex: 999,
               pointerEvents: "none",
             }}
           >
-            📍
+            <img
+              src="https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png"
+              alt="Map pin"
+              width={25}
+              height={41}
+              style={{ userSelect: "none" }}
+            />
           </Box>
         </Box>
 

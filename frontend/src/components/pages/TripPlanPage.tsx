@@ -68,7 +68,7 @@ const TripPlanPage = () => {
         flexDirection={"column"}
         justifyContent={"flex-start"}
         alignItems={"center"}
-        padding={"11px 24px 24px 24px"}
+        padding={"11px 16px 16px 16px"}
         gap={"12px"}
         width={{ xs: "100%", sm: "25%" }}
         minWidth={{ xs: "100%", sm: "310px" }}
@@ -87,19 +87,22 @@ const TripPlanPage = () => {
         {/* INPUT CARDS - TO MAKE INTO COMPONENT */}
         <LocationInput
           icon={<PersonPinCircleIcon />}
-          label="SET CURRENT LOCATION"
+          baseLabel="CURRENT LOCATION"
           description="Let us know where you're starting from. You can use your current GPS location or manually enter it."
+          value={currentLocation || undefined}
           onClick={() => handleOpenDrawer("current")}
         />
         <LocationInput
           icon={<ArchiveIcon />}
-          label="SET PICKUP LOCATION"
+          baseLabel="PICKUP LOCATION"
           description="Where are you picking up your load? Includes a one hour loading delay in trip plan."
+          value={pickupLocation || undefined}
           onClick={() => handleOpenDrawer("pickup")}
         />
         <LocationInput
           icon={<UnarchiveIcon />}
-          label="SET DROPOFF LOCATION"
+          baseLabel="DROPOFF LOCATION"
+          value={dropoffLocation || undefined}
           description="Where are you delivering your load? Includes a one hour unloading delay in trip plan."
           onClick={() => handleOpenDrawer("dropoff")}
         />

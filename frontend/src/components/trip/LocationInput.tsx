@@ -1,21 +1,32 @@
-import { Box, Typography, Button } from "@mui/material";
+import { Box, Typography, Button, Badge } from "@mui/material";
 import { ReactNode } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import WhereToVoteIcon from "@mui/icons-material/WhereToVote";
 
 interface LocationInputProps {
   icon: ReactNode;
-  label: string;
+  baseLabel: string;
   description: string;
   onClick: () => void;
   size?: "small" | "medium" | "large";
+  value?: {
+    label: string;
+    lat: number;
+    lon: number;
+  };
 }
 
 const LocationInput = ({
   icon,
-  label,
+  baseLabel,
   description,
   onClick,
   size = "medium",
+  value,
 }: LocationInputProps) => {
+  const action = value ? "EDIT" : "SET";
+  const label = `${action} ${baseLabel}`;
+
   return (
     <Box
       display="flex"
@@ -31,6 +42,19 @@ const LocationInput = ({
         borderRadius: "0px 12px 0px 12px",
       }}
     >
+      <Badge
+        color="secondary"
+        variant="standard"
+        badgeContent={<WhereToVoteIcon />}
+        invisible={!value}
+        sx={{
+          alignSelf: "flex-end",
+          ".MuiBadge-badge": {
+            transform: "scale(1.5) translate(50%, -50%)",
+          },
+        }}
+      />
+
       <Button
         variant="contained"
         size={size}
@@ -42,9 +66,31 @@ const LocationInput = ({
       >
         {label}
       </Button>
-      <Typography fontSize={12} align="center">
-        {description}
-      </Typography>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={value ? "set" : "default"}
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.25 }}
+        >
+          <Typography
+            fontSize={12}
+            align="center"
+            sx={{
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              mt: 1,
+            }}
+          >
+            {value ? value.label : description}
+          </Typography>
+        </motion.div>
+      </AnimatePresence>
     </Box>
   );
 };

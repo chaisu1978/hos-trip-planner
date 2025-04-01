@@ -63,3 +63,16 @@ class DailyLogSheetSerializer(serializers.Serializer):
     total_miles = serializers.FloatField()
     total_hours = serializers.FloatField()
     duty_periods = DutyPeriodSerializer(many=True)
+
+
+class GeocodeResultSerializer(serializers.Serializer):
+    place_id = serializers.CharField()
+    display_name = serializers.CharField()
+    lat = serializers.CharField()
+    lon = serializers.CharField()
+
+
+class GeocodeReverseResultSerializer(serializers.Serializer):
+    display_name = serializers.CharField()
+    lat = serializers.CharField()
+    lon = serializers.CharField()
