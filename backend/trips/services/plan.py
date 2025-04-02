@@ -69,19 +69,34 @@ def plan_trip(trip: Trip):
         )
 
         if not leg.is_rest_stop and seg_idx is not None:
-            for j, step in enumerate(segments[seg_idx].get("steps", [])):
-                TripSegmentStep.objects.create(
-                    leg=leg,
-                    step_order=j,
-                    instruction=step.get("instruction", ""),
-                    distance_meters=Decimal(step.get("distance", 0)),
-                    duration_seconds=Decimal(str(step.get("duration") or "0")),
-                    start_lat=leg.start_lat,
-                    start_lon=leg.start_lon,
-                    end_lat=leg.end_lat,
-                    end_lon=leg.end_lon,
-                    waypoints=step.get("way_points", []),
-                )
+            leg_steps = segments[seg_idx].get("steps", [])
+
+            if leg_steps:
+                decoded_polyline = []
+                for j, step in enumerate(leg_steps):
+                    TripSegmentStep.objects.create(
+                        leg=leg,
+                        step_order=j,
+                        instruction=step.get("instruction", ""),
+                        distance_meters=Decimal(step.get("distance", 0)),
+                        duration_seconds=Decimal(str(step.get("duration") or "0")),
+                        start_lat=step.get("start_lat", leg.start_lat),
+                        start_lon=step.get("start_lon", leg.start_lon),
+                        end_lat=step.get("end_lat", leg.end_lat),
+                        end_lon=step.get("end_lon", leg.end_lon),
+                        waypoints=step.get("way_points", []),
+                    )
+                    decoded_polyline.append([step["start_lat"], step["start_lon"]])
+
+                # Add the final endpoint
+                decoded_polyline.append([
+                    leg_steps[-1]["end_lat"],
+                    leg_steps[-1]["end_lon"]
+                ])
+
+                # ✅ Save polyline to this leg (INSIDE this block)
+                leg.polyline_geometry = decoded_polyline
+                leg.save()
 
 
 def _label_from_index(i, trip: Trip) -> str:

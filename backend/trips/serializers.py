@@ -14,6 +14,7 @@ class TripSegmentStepSerializer(serializers.ModelSerializer):
 class TripLegSerializer(serializers.ModelSerializer):
     steps = TripSegmentStepSerializer(many=True, read_only=True)
     leg_type = serializers.SerializerMethodField()
+    olyline_geometry = serializers.JSONField(read_only=True)
 
     class Meta:
         model = TripLeg

@@ -58,6 +58,7 @@ class TripLeg(models.Model):
 
     is_rest_stop = models.BooleanField(default=False)
     is_fuel_stop = models.BooleanField(default=False)
+    polyline_geometry = models.JSONField(null=True, blank=True)
 
     notes = models.TextField(blank=True)
 

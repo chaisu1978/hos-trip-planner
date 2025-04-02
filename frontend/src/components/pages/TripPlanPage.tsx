@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   useTheme,
   Box,
@@ -16,16 +15,44 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
 import LocationDrawer from "../trip/LocationDrawer";
 import { createThemedMarkerIcon } from "../../utils/createThemedMarkerIcon";
-
+import { useSnackbar } from "../common/SnackbarProvider";
+import LoadingOverlay from "../common/LoadingOverlay";
+import apiClient from "../../services/auth";
 // leaflet
 import L from "leaflet";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  Polyline,
+  useMap,
+} from "react-leaflet";
 import { motion } from "framer-motion";
 
 interface LocationData {
   label: string;
   lat: number;
   lon: number;
+}
+
+interface TripLeg {
+  id: number;
+  leg_type: string;
+  start_lat: number | null;
+  start_lon: number | null;
+  end_lat: number | null;
+  end_lon: number | null;
+  notes?: string;
+  start_label?: string;
+  polyline_geometry?: [number, number][];
+  steps?: {
+    start_lat: number;
+    start_lon: number;
+    end_lat: number;
+    end_lon: number;
+    instruction?: string;
+  }[];
 }
 
 const TripPlanPage = () => {
@@ -43,6 +70,10 @@ const TripPlanPage = () => {
   const [drawerType, setDrawerType] = useState<
     "current" | "pickup" | "dropoff" | null
   >(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [trip, setTrip] = useState<any>(null);
+
+  const { showSnackbar } = useSnackbar();
   const theme = useTheme();
 
   const currentIcon = createThemedMarkerIcon(theme, "error");
@@ -76,6 +107,43 @@ const TripPlanPage = () => {
     return null;
   };
 
+  const handleSubmitTrip = async () => {
+    if (!currentLocation || !pickupLocation || !dropoffLocation) {
+      showSnackbar("Please set all locations before planning.", "warning");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const payload = {
+        name: "", // Optional: you could add a generated name later
+        current_location_label: currentLocation.label,
+        current_location_lat: currentLocation.lat,
+        current_location_lon: currentLocation.lon,
+        pickup_location_label: pickupLocation.label,
+        pickup_location_lat: pickupLocation.lat,
+        pickup_location_lon: pickupLocation.lon,
+        dropoff_location_label: dropoffLocation.label,
+        dropoff_location_lat: dropoffLocation.lat,
+        dropoff_location_lon: dropoffLocation.lon,
+        current_cycle_hours: cycleHours.toFixed(2), // Backend expects stringified decimal
+        departure_time: new Date().toISOString(), // Backend expects ISO format
+      };
+
+      const response = await apiClient.post("/trips/trips/", payload);
+
+      showSnackbar("Trip planned successfully!", "success");
+      setTrip(response.data);
+
+      // TODO: Store trip in local state for summary/logbook display
+    } catch (error) {
+      console.error("Trip planning failed", error);
+      showSnackbar("Failed to plan trip. Please try again.", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const getLatLngTuple = (loc: LocationData | null): [number, number] | null =>
     loc ? [loc.lat, loc.lon] : null;
 
@@ -84,6 +152,10 @@ const TripPlanPage = () => {
     getLatLngTuple(pickupLocation),
     getLatLngTuple(dropoffLocation),
   ].filter(Boolean) as [number, number][];
+
+  {
+    submitting && <LoadingOverlay />;
+  }
 
   return (
     <Box
@@ -170,6 +242,7 @@ const TripPlanPage = () => {
               borderRadius: "24px",
               padding: "8px",
             }}
+            onClick={handleSubmitTrip}
           >
             PLAN TRIP
           </Button>
@@ -202,10 +275,11 @@ const TripPlanPage = () => {
         >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">
-            OpenStreetMap</a> contributors'
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
           <MapAutoFit points={points} />
+
+          {/* Location markers before trip is planned */}
           {currentLocation && (
             <Marker
               position={[currentLocation.lat, currentLocation.lon]}
@@ -236,6 +310,55 @@ const TripPlanPage = () => {
               </Popup>
             </Marker>
           )}
+
+          {/* Polylines */}
+          {trip?.legs
+            .filter(
+              (leg: TripLeg) =>
+                leg.leg_type === "drive" && Array.isArray(leg.polyline_geometry)
+            )
+            .map((leg: TripLeg) => (
+              <Polyline
+                key={`polyline-${leg.id}`}
+                positions={leg.polyline_geometry as [number, number][]}
+                pathOptions={{
+                  color: theme.palette.success.main,
+                  weight: 4,
+                  opacity: 0.8,
+                }}
+              />
+            ))}
+
+          {/* Trip leg markers */}
+          {trip?.legs.map((leg: TripLeg) => {
+            const lat = leg.end_lat;
+            const lon = leg.end_lon;
+            if (lat == null || lon == null) return null;
+
+            const markerPosition: [number, number] = [lat, lon];
+
+            const legTypeColorMap: Record<string, any> = {
+              pickup: "primary",
+              dropoff: "secondary",
+              drive: "success",
+              rest: "info",
+              break: "warning",
+              fuel: "error",
+            };
+
+            const color = legTypeColorMap[leg.leg_type] ?? "info";
+            const icon = createThemedMarkerIcon(theme, color);
+
+            return (
+              <Marker key={leg.id} position={markerPosition} icon={icon}>
+                <Popup>
+                  <strong>{leg.leg_type.toUpperCase()}</strong>
+                  <br />
+                  {leg.notes || leg.start_label}
+                </Popup>
+              </Marker>
+            );
+          })}
         </MapContainer>
         <Box
           id="trip-summary-header"
