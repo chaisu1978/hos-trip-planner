@@ -42,11 +42,11 @@ class TripLeg(models.Model):
     # 0 = first leg, 1 = second leg, ...
     leg_order = models.PositiveIntegerField()
 
-    start_label = models.CharField(max_length=255)
+    start_label = models.TextField()
     start_lat = models.FloatField(null=True, blank=True)
     start_lon = models.FloatField(null=True, blank=True)
 
-    end_label = models.CharField(max_length=255)
+    end_label = models.TextField()
     end_lat = models.FloatField(null=True, blank=True)
     end_lon = models.FloatField(null=True, blank=True)
 

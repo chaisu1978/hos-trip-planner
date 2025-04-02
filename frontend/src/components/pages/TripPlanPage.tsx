@@ -315,7 +315,8 @@ const TripPlanPage = () => {
           {trip?.legs
             .filter(
               (leg: TripLeg) =>
-                leg.leg_type === "drive" && Array.isArray(leg.polyline_geometry)
+                Array.isArray(leg.polyline_geometry) &&
+                leg.polyline_geometry.length > 1
             )
             .map((leg: TripLeg) => (
               <Polyline

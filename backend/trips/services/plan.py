@@ -1,4 +1,4 @@
-from .ors import get_route
+from .ors import get_route, get_optimized_route
 from ..models import Trip, TripLeg, TripSegmentStep
 from decimal import Decimal
 from .hos import chunk_legs_by_hos
@@ -25,42 +25,46 @@ def plan_trip(trip: Trip):
         [trip.dropoff_location_lon, trip.dropoff_location_lat],
     ]
 
-    # 1. Call ORS
-    result = get_route(coordinates)
+    USE_OPTIMIZATION = True
+
+    if USE_OPTIMIZATION:
+        result = get_optimized_route(coordinates)
+    else:
+        result = get_route(coordinates)
 
     trip.planned_distance_miles = result["distance_miles"]
     trip.planned_duration_hours = result["duration_hours"]
     trip.save()
 
-    # 2. Clear existing legs if this is a re-plan
+    # 👇 NEW: extract geometry early
+    geometry = result.get("geometry", [])
+
     trip.legs.all().delete()
-
-    segments = result["segments"]
-    total_legs = len(segments)
-
+    segments = result.get("segments", [])
     hos_legs = chunk_legs_by_hos(segments, coordinates, Decimal(trip.current_cycle_hours))
 
-    # Use trip.departure_time as the starting point for the timeline
     current_time = trip.departure_time
-    cycle_hours = Decimal(trip.current_cycle_hours)
 
     for leg_data in hos_legs:
         seg_idx = leg_data.get("segment_index")
-        # Remove unnecessary keys for the creation of the TripLeg
+
         leg_data.pop("start_label", None)
         leg_data.pop("end_label", None)
         leg_data.pop("segment_index", None)
 
-        # Set departure time and calculate arrival time for each leg
         duration_hrs = leg_data["duration_hours"]
         duration_seconds = float(duration_hrs) * 3600
 
-        # Set the departure and arrival time for this leg
         leg_data["departure_time"] = current_time
-        current_time += timedelta(seconds=duration_seconds)  # Add duration of leg
+        current_time += timedelta(seconds=duration_seconds)
         leg_data["arrival_time"] = current_time
 
-        # Create the TripLeg instance
+        # ✅ inject optimization geometry ONCE into first drive leg
+        if not leg_data.get("is_rest_stop") and geometry:
+            # Flip (lon, lat) to (lat, lon) before storing
+            leg_data["polyline_geometry"] = [(lat, lon) for lon, lat in geometry]
+            geometry = []  # Ensure it's only used once
+
         leg = TripLeg.objects.create(
             trip=trip,
             **leg_data,
@@ -70,7 +74,6 @@ def plan_trip(trip: Trip):
 
         if not leg.is_rest_stop and seg_idx is not None:
             leg_steps = segments[seg_idx].get("steps", [])
-
             if leg_steps:
                 decoded_polyline = []
                 for j, step in enumerate(leg_steps):
@@ -87,14 +90,10 @@ def plan_trip(trip: Trip):
                         waypoints=step.get("way_points", []),
                     )
                     decoded_polyline.append([step["start_lat"], step["start_lon"]])
-
-                # Add the final endpoint
                 decoded_polyline.append([
                     leg_steps[-1]["end_lat"],
                     leg_steps[-1]["end_lon"]
                 ])
-
-                # ✅ Save polyline to this leg (INSIDE this block)
                 leg.polyline_geometry = decoded_polyline
                 leg.save()
 
