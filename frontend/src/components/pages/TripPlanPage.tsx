@@ -8,12 +8,14 @@ import {
 } from "@mui/material";
 import PersonPinCircleIcon from "@mui/icons-material/PersonPinCircle";
 import LocationInput from "../trip/LocationInput";
+import TripLegCard from "../trip/TripLegCard";
 import CycleHoursInput from "../trip/CycleHoursInput";
 import ArchiveIcon from "@mui/icons-material/Archive";
 import UnarchiveIcon from "@mui/icons-material/Unarchive";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
 import LocationDrawer from "../trip/LocationDrawer";
+import { TripLeg } from "../../types/TripLeg";
 import { createThemedMarkerIcon } from "../../utils/createThemedMarkerIcon";
 import { useSnackbar } from "../common/SnackbarProvider";
 import LoadingOverlay from "../common/LoadingOverlay";
@@ -34,25 +36,6 @@ interface LocationData {
   label: string;
   lat: number;
   lon: number;
-}
-
-interface TripLeg {
-  id: number;
-  leg_type: string;
-  start_lat: number | null;
-  start_lon: number | null;
-  end_lat: number | null;
-  end_lon: number | null;
-  notes?: string;
-  start_label?: string;
-  polyline_geometry?: [number, number][];
-  steps?: {
-    start_lat: number;
-    start_lon: number;
-    end_lat: number;
-    end_lon: number;
-    instruction?: string;
-  }[];
 }
 
 const TripPlanPage = () => {
@@ -132,8 +115,21 @@ const TripPlanPage = () => {
 
       const response = await apiClient.post("/trips/trips/", payload);
 
+      // Normalize legs
+      const legs = response.data.legs.map((leg: any, index: number) => ({
+        id: index,
+        leg_type: leg.leg_type,
+        distance_miles: leg.distance_miles ?? 0, // backend returns in miles
+        duration_hours: leg.duration_hours ?? 0,
+        start_label: leg.start_label,
+        end_label: leg.end_label,
+        notes: leg.notes,
+        polyline_geometry: leg.polyline_geometry ?? [],
+      }));
+
       showSnackbar("Trip planned successfully!", "success");
-      setTrip(response.data);
+
+      setTrip({ ...response.data, legs }); // override legs with normalized version
 
       // TODO: Store trip in local state for summary/logbook display
     } catch (error) {
@@ -404,7 +400,9 @@ const TripPlanPage = () => {
             borderRadius: "0px 12px 0px 12px",
           }}
         >
-          Trip Details will go here and can interact with the map above.
+          {trip?.legs?.map((leg: TripLeg) => (
+            <TripLegCard key={leg.id} leg={leg} />
+          ))}
         </Box>
       </Box>
       <LocationDrawer

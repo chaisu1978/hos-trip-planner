@@ -25,7 +25,7 @@ def plan_trip(trip: Trip):
         [trip.dropoff_location_lon, trip.dropoff_location_lat],
     ]
 
-    USE_OPTIMIZATION = True
+    USE_OPTIMIZATION = False
 
     if USE_OPTIMIZATION:
         result = get_optimized_route(coordinates)
@@ -65,6 +65,8 @@ def plan_trip(trip: Trip):
             leg_data["polyline_geometry"] = [(lat, lon) for lon, lat in geometry]
             geometry = []  # Ensure it's only used once
 
+        leg_steps = leg_data.pop("steps", [])
+
         leg = TripLeg.objects.create(
             trip=trip,
             **leg_data,
@@ -73,7 +75,7 @@ def plan_trip(trip: Trip):
         )
 
         if not leg.is_rest_stop and seg_idx is not None:
-            leg_steps = segments[seg_idx].get("steps", [])
+            leg_steps = leg_data.get("steps", [])
             if leg_steps:
                 decoded_polyline = []
                 for j, step in enumerate(leg_steps):
@@ -99,11 +101,8 @@ def plan_trip(trip: Trip):
 
 
 def _label_from_index(i, trip: Trip) -> str:
-    labels = [
-        f"Start: {trip.current_location_label}",
-        f"Pickup: {trip.pickup_location_label}",
-        f"Dropoff: {trip.dropoff_location_label}",
-    ]
-    if i < len(labels):
-        return labels[i]
-    return f"From {trip.pickup_location_label} to {trip.dropoff_location_label}"
+    if i == 0:
+        return f"{trip.current_location_label} → {trip.pickup_location_label}"
+    if i == 1:
+        return f"{trip.pickup_location_label} → {trip.dropoff_location_label}"
+    return f"{trip.pickup_location_label} → {trip.dropoff_location_label}"
