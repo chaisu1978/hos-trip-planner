@@ -26,7 +26,6 @@ def chunk_legs_by_hos(segments: List[dict], coordinates: List[list], start_cycle
     def add_event_leg(label, duration, note, is_rest=False, is_fuel=False):
         nonlocal leg_order, current_cycle_hours, duty_hours_since_rest, current_drive_hours, drive_hours_since_break
         last_leg = legs[-1] if legs else {}
-        # 🛑 prevent back-to-back rest stops
         if is_rest and last_leg.get("is_rest_stop", False):
             return
         legs.append({
@@ -59,6 +58,11 @@ def chunk_legs_by_hos(segments: List[dict], coordinates: List[list], start_cycle
 
         remaining_drive_time = HOS_MAX_DRIVE_HOURS - current_drive_hours
 
+        # Check break BEFORE long driving resumes
+        if drive_hours_since_break + seg_duration_hrs > HOS_BREAK_REQUIRED_AFTER_HOURS:
+            add_event_leg("30-min Break", HOS_MIN_BREAK_DURATION, "30-minute required HOS break")
+            drive_hours_since_break = Decimal("0.0")
+
         # Split segment if it exceeds max drive time
         while seg_duration_hrs > remaining_drive_time:
             partial_distance = seg_distance_miles * (remaining_drive_time / seg_duration_hrs)
@@ -80,7 +84,6 @@ def chunk_legs_by_hos(segments: List[dict], coordinates: List[list], start_cycle
             })
             leg_order += 1
 
-            current_drive_hours = Decimal("0.0")
             current_cycle_hours += remaining_drive_time
             duty_hours_since_rest += remaining_drive_time
             drive_hours_since_break += remaining_drive_time
@@ -92,15 +95,6 @@ def chunk_legs_by_hos(segments: List[dict], coordinates: List[list], start_cycle
             seg_distance_miles -= partial_distance
             remaining_drive_time = HOS_MAX_DRIVE_HOURS
 
-        # Break check
-        if drive_hours_since_break + seg_duration_hrs > HOS_BREAK_REQUIRED_AFTER_HOURS:
-            add_event_leg("30-min Break", HOS_MIN_BREAK_DURATION, "30-minute required HOS break")
-
-        # Fuel check
-        if miles_since_fuel + seg_distance_miles > FUEL_STOP_INTERVAL_MILES:
-            add_event_leg("Fuel Stop", FUEL_STOP_DURATION, "Fuel stop required every 1000 miles", is_fuel=True)
-            miles_since_fuel = Decimal("0.0")
-
         # Final rest check
         if (
             current_drive_hours + seg_duration_hrs > HOS_MAX_DRIVE_HOURS or
@@ -108,6 +102,11 @@ def chunk_legs_by_hos(segments: List[dict], coordinates: List[list], start_cycle
             current_cycle_hours + seg_duration_hrs > HOS_CYCLE_LIMIT_HOURS
         ):
             add_event_leg("Rest Break", HOS_REST_BREAK_HOURS, "Required 10-hour rest break", is_rest=True)
+
+        # Fuel check (after rest, so we don't accidentally insert rest twice with fuel in-between)
+        if miles_since_fuel + seg_distance_miles > FUEL_STOP_INTERVAL_MILES:
+            add_event_leg("Fuel Stop", FUEL_STOP_DURATION, "Fuel stop required every 1000 miles", is_fuel=True)
+            miles_since_fuel = Decimal("0.0")
 
         start_coords = coordinates[i]
         end_coords = coordinates[i + 1]
