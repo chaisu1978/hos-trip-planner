@@ -15,6 +15,7 @@ import UnarchiveIcon from "@mui/icons-material/Unarchive";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
 import LocationDrawer from "../trip/LocationDrawer";
+import AnimatedTripMap from "../trip/AnimatedTripMap";
 import { TripLeg } from "../../types/TripLeg";
 import { createThemedMarkerIcon } from "../../utils/createThemedMarkerIcon";
 import { useSnackbar } from "../common/SnackbarProvider";
@@ -55,7 +56,7 @@ const TripPlanPage = () => {
   >(null);
   const [submitting, setSubmitting] = useState(false);
   const [trip, setTrip] = useState<any>(null);
-
+  const [selectedLegId, setSelectedLegId] = useState<number | null>(null);
   const { showSnackbar } = useSnackbar();
   const theme = useTheme();
 
@@ -125,6 +126,10 @@ const TripPlanPage = () => {
         end_label: leg.end_label,
         notes: leg.notes,
         polyline_geometry: leg.polyline_geometry ?? [],
+        start_lat: leg.start_lat,
+        start_lon: leg.start_lon,
+        end_lat: leg.end_lat,
+        end_lon: leg.end_lon,
       }));
       console.log("Trip Legs API Response", response.data.legs);
       showSnackbar("Trip planned successfully!", "success");
@@ -272,100 +277,17 @@ const TripPlanPage = () => {
         }}
       >
         {/* leaflet map full width, 65vh */}
-        <MapContainer
-          center={[39.8283, -98.5795]}
-          zoom={5}
-          scrollWheelZoom={false}
-          style={{ width: "100%", height: "55vh" }}
-        >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          />
-          <MapAutoFit points={points} />
-
-          {/* Location markers before trip is planned */}
-          {currentLocation && (
-            <Marker
-              position={[currentLocation.lat, currentLocation.lon]}
-              icon={currentIcon}
-            >
-              <Popup>
-                <b>CURRENT LOCATION:</b> {currentLocation.label}
-              </Popup>
-            </Marker>
-          )}
-          {pickupLocation && (
-            <Marker
-              position={[pickupLocation.lat, pickupLocation.lon]}
-              icon={pickupIcon}
-            >
-              <Popup>
-                <b>PICKUP LOCATION:</b> {pickupLocation.label}
-              </Popup>
-            </Marker>
-          )}
-          {dropoffLocation && (
-            <Marker
-              position={[dropoffLocation.lat, dropoffLocation.lon]}
-              icon={dropoffIcon}
-            >
-              <Popup>
-                <b>DROPOFF LOCATION:</b> {dropoffLocation.label}
-              </Popup>
-            </Marker>
-          )}
-
-          {/* Polylines */}
-          {trip?.legs
-            .filter(
-              (leg: TripLeg) =>
-                Array.isArray(leg.polyline_geometry) &&
-                leg.polyline_geometry.length > 1
-            )
-            .map((leg: TripLeg) => (
-              <Polyline
-                key={`polyline-${leg.id}`}
-                positions={leg.polyline_geometry as [number, number][]}
-                pathOptions={{
-                  color: theme.palette.success.main,
-                  weight: 4,
-                  opacity: 0.8,
-                }}
-              />
-            ))}
-
-          {/* Trip leg markers */}
-          {trip?.legs.map((leg: TripLeg) => {
-            const lat = leg.end_lat;
-            const lon = leg.end_lon;
-            if (lat == null || lon == null) return null;
-
-            const markerPosition: [number, number] = [lat, lon];
-
-            const legTypeColorMap: Record<string, any> = {
-              pickup: "primary",
-              dropoff: "secondary",
-              drive: "success",
-              rest: "info",
-              break: "warning",
-              fuel: "error",
-            };
-
-            const color = legTypeColorMap[leg.leg_type] ?? "info";
-            const icon = createThemedMarkerIcon(theme, color);
-
-            return (
-              <Marker key={leg.id} position={markerPosition} icon={icon}>
-                <Popup>
-                  <strong>{leg.leg_type.toUpperCase()}</strong>
-                  <br />
-                  {leg.notes || leg.start_label}
-                </Popup>
-              </Marker>
-            );
-          })}
-        </MapContainer>
+        <AnimatedTripMap
+          trip={trip}
+          theme={theme}
+          selectedLegId={selectedLegId}
+          onLegSelect={setSelectedLegId}
+          locationMarkers={{
+            current: currentLocation,
+            pickup: pickupLocation,
+            dropoff: dropoffLocation,
+          }}
+        />
         <Box
           id="trip-summary-header"
           display={"flex"}
@@ -395,22 +317,21 @@ const TripPlanPage = () => {
           </Button>
         </Box>
         <Box
-          id="trip-summary-content"
-          display={"flex"}
-          flexDirection={"column"}
-          justifyContent={"flex-start"}
-          alignItems={"flex-start"}
-          padding={"10px"}
-          gap={"8px"}
-          width={"100%"}
-          sx={{
-            backgroundColor: "background.paper",
-            color: "text.primary",
-            borderRadius: "0px 12px 0px 12px",
-          }}
+          display="flex"
+          flexDirection="row"
+          gap="0"
+          padding="0"
+          sx={{ width: "100%", overflowX: "auto" }}
         >
-          {trip?.legs?.map((leg: TripLeg) => (
-            <TripLegCard key={leg.id} leg={leg} />
+          {trip?.legs?.map((leg: TripLeg, index: number) => (
+            <motion.div
+              key={leg.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.2, duration: 0.4 }}
+            >
+              <TripLegCard leg={leg} />
+            </motion.div>
           ))}
         </Box>
       </Box>

@@ -27,13 +27,13 @@ export default function TripLegCard({ leg }: { leg: TripLeg }) {
         bgcolor="background.paper"
         display="flex"
         flexDirection="column"
-        gap={1}
+        gap={0}
         sx={{
           borderLeft: "8px solid",
           borderColor: (theme) => theme.palette.success.main,
         }}
       >
-        <Box display="flex" alignItems="center" gap={1}>
+        <Box display="flex" alignItems="center" gap={0}>
           {icon}
           <Typography variant="h6" fontWeight={500}>
             {leg.leg_type.toUpperCase()}

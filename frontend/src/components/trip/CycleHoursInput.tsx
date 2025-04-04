@@ -44,7 +44,6 @@ const CycleHoursInput = ({ value, onChange }: CycleHoursInputProps) => {
           padding: "8px 16px",
           width: "100%",
           textAlign: "center",
-          boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
         }}
       >
         {/* //Icon  */}
