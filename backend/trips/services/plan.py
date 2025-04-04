@@ -5,20 +5,41 @@ from .hos import chunk_legs_by_hos
 from datetime import timedelta
 from django.utils import timezone
 
-def _resolve_label(leg_data, which: str, trip: Trip) -> str:
-    """ Helper to generate a label for a leg based on its data """
+def _resolve_label(leg_data, which: str) -> str:
+    """
+    Original old-version logic for non-drive segments
+    (fuel, break, rest, pickup, dropoff).
+    Also checks for a {which}_label if it exists.
+    """
     if leg_data.get(f"{which}_label"):
         return leg_data[f"{which}_label"]
-    return _label_from_index(leg_data["leg_order"], trip)
 
+    leg_type = leg_data.get("leg_type")
+    if leg_type == "fuel":
+        return "Fuel Stop"
+    elif leg_type == "rest":
+        return "10-hr Rest Break"
+    elif leg_type == "break":
+        return "30-min Break"
+    elif leg_type == "pickup":
+        return "Pickup Stop"
+    elif leg_type == "dropoff":
+        return "Dropoff Stop"
+
+    # If it's not drive, fuel, break, rest, etc., default to empty string
+    return ""
 
 def plan_trip(trip: Trip):
     """
-    Given a Trip instance (with locations), calls ORS and populates route data.
-    Creates TripLegs for the route: current → pickup → dropoff
+    Hybrid approach:
+      - For drive segments, we label them 'Pickup Leg X' vs. 'Dropoff Leg X'
+        using the chunk_legs_by_hos segment_index (0 => current->pickup, 1 => pickup->dropoff).
+      - For non-drive segments (fuel, break, rest, pickup, dropoff),
+        we re-use the old _resolve_label() logic to get the nice wording.
+      - No reverse_geocode calls, no time.sleep calls.
     """
 
-    # ORS wants coordinates as [lon, lat]
+    # Coordinates: 0 => current, 1 => pickup, 2 => dropoff
     coordinates = [
         [trip.current_location_lon, trip.current_location_lat],
         [trip.pickup_location_lon, trip.pickup_location_lat],
@@ -26,78 +47,110 @@ def plan_trip(trip: Trip):
     ]
 
     USE_OPTIMIZATION = False
-
     if USE_OPTIMIZATION:
         result = get_optimized_route(coordinates)
     else:
         result = get_route(coordinates)
 
+    # Save trip-level summary
     trip.planned_distance_miles = result["distance_miles"]
     trip.planned_duration_hours = result["duration_hours"]
     trip.save()
 
-    # 👇 NEW: extract geometry early
     geometry = result.get("geometry", [])
-
     trip.legs.all().delete()
+
+    # Break the route into segments, then chunk by HOS
     segments = result.get("segments", [])
     hos_legs = chunk_legs_by_hos(segments, coordinates, Decimal(trip.current_cycle_hours))
 
     current_time = trip.departure_time
 
-    for leg_data in hos_legs:
-        seg_idx = leg_data.get("segment_index")
+    # We'll track how many drive legs we have for pickup vs dropoff
+    pickup_drive_count = 1
+    dropoff_drive_count = 1
 
+    # Keep track of last known lat/lon/label for short non-drive segments
+    last_known_lat = trip.current_location_lat
+    last_known_lon = trip.current_location_lon
+    last_known_label = trip.current_location_label or "Starting Location"
+
+    for idx, leg_data in enumerate(hos_legs):
+        # chunk_legs_by_hos often sets segment_index so we know whether it's part of:
+        # 0 => current->pickup, 1 => pickup->dropoff
+        segment_index = leg_data.pop("segment_index", None)
+
+        # Distinguish drive vs. non-drive
+        is_drive = (
+            leg_data.get("distance_miles", 0) > 0
+            and not leg_data.get("is_rest_stop")
+            and not leg_data.get("is_fuel_stop")
+        )
+
+        # We'll remove steps from the data dict since we store them separately
+        leg_steps = leg_data.pop("steps", [])
+
+        if is_drive:
+            # We rely on segment_index to decide if it's "Pickup Leg" or "Dropoff Leg"
+            if segment_index == 0:
+                label = f"Pickup Leg {pickup_drive_count}"
+                pickup_drive_count += 1
+            else:
+                label = f"Dropoff Leg {dropoff_drive_count}"
+                dropoff_drive_count += 1
+
+            start_label = label
+            end_label = label
+
+            # If we have step coords, update last known lat/lon
+            if leg_steps:
+                first_step = leg_steps[0]
+                last_step = leg_steps[-1]
+                start_lat = first_step.get("start_lat", last_known_lat)
+                start_lon = first_step.get("start_lon", last_known_lon)
+                end_lat = last_step.get("end_lat", start_lat)
+                end_lon = last_step.get("end_lon", start_lon)
+            else:
+                # Fallback
+                start_lat = last_known_lat
+                start_lon = last_known_lon
+                end_lat = last_known_lat
+                end_lon = last_known_lon
+
+            # Update last known location
+            last_known_lat = end_lat
+            last_known_lon = end_lon
+            last_known_label = label
+
+        else:
+            # Non-drive leg => label with old logic
+            start_label = _resolve_label(leg_data, "start") or last_known_label
+            end_label = _resolve_label(leg_data, "end") or last_known_label
+
+        # Remove leftover fields
         leg_data.pop("start_label", None)
         leg_data.pop("end_label", None)
-        leg_data.pop("segment_index", None)
 
+        # Calculate times
         duration_hrs = leg_data["duration_hours"]
         duration_seconds = float(duration_hrs) * 3600
-
         leg_data["departure_time"] = current_time
         current_time += timedelta(seconds=duration_seconds)
         leg_data["arrival_time"] = current_time
 
-        # ✅ inject optimization geometry ONCE into first drive leg
-        if not leg_data.get("is_rest_stop") and geometry:
-            # Flip (lon, lat) to (lat, lon) before storing
+        # Optionally store geometry for the first driving chunk
+        # If you want partial geometry for each chunk, you'd slice it by step indexes
+        if is_drive and geometry:
             leg_data["polyline_geometry"] = [(lat, lon) for lon, lat in geometry]
-            geometry = []  # Ensure it's only used once
+            geometry = []
 
-        leg_steps = leg_data.pop("steps", [])
-
-        leg = TripLeg.objects.create(
+        # Create the DB record
+        new_leg = TripLeg.objects.create(
             trip=trip,
             **leg_data,
-            start_label=_resolve_label(leg_data, "start", trip),
-            end_label=_resolve_label(leg_data, "end", trip),
+            start_label=start_label,
+            end_label=end_label,
         )
-
-        if not leg.is_rest_stop and seg_idx is not None:
-            leg_steps = leg_data.get("steps", [])
-            if leg_steps:
-                decoded_polyline = []
-                for j, step in enumerate(leg_steps):
-                    TripSegmentStep.objects.create(
-                        leg=leg,
-                        step_order=j,
-                        instruction=step.get("instruction", ""),
-                        distance_meters=Decimal(step.get("distance", 0)),
-                        duration_seconds=Decimal(str(step.get("duration") or "0")),
-                        start_lat=step.get("start_lat", leg.start_lat),
-                        start_lon=step.get("start_lon", leg.start_lon),
-                        end_lat=step.get("end_lat", leg.end_lat),
-                        end_lon=step.get("end_lon", leg.end_lon),
-                        waypoints=step.get("way_points", []),
-                    )
-                    decoded_polyline.append([step["start_lat"], step["start_lon"]])
-                decoded_polyline.append([
-                    leg_steps[-1]["end_lat"],
-                    leg_steps[-1]["end_lon"]
-                ])
-                leg.polyline_geometry = decoded_polyline
-                leg.save()
 
 
 def _label_from_index(i, trip: Trip) -> str:

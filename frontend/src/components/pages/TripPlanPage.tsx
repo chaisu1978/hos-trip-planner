@@ -126,7 +126,7 @@ const TripPlanPage = () => {
         notes: leg.notes,
         polyline_geometry: leg.polyline_geometry ?? [],
       }));
-
+      console.log("Trip Legs API Response", response.data.legs);
       showSnackbar("Trip planned successfully!", "success");
 
       setTrip({ ...response.data, legs }); // override legs with normalized version
@@ -231,9 +231,18 @@ const TripPlanPage = () => {
             variant="contained"
             size="large"
             color="secondary"
-            startIcon={<CalendarMonthIcon />}
+            startIcon={
+              submitting ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                <CalendarMonthIcon />
+              )
+            }
             fullWidth
-            disabled={!(currentLocation && pickupLocation && dropoffLocation)}
+            disabled={
+              !(currentLocation && pickupLocation && dropoffLocation) ||
+              submitting
+            }
             sx={{
               borderRadius: "24px",
               padding: "8px",

@@ -49,7 +49,7 @@ export default function TripLegCard({ leg }: { leg: TripLeg }) {
         </Box>
 
         <Typography fontSize="0.9rem" color="text.secondary">
-          {leg.start_label} → {leg.end_label}
+          {leg.start_label}
         </Typography>
 
         {leg.notes && (
