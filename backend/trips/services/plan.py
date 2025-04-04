@@ -4,6 +4,7 @@ from decimal import Decimal
 from .hos import chunk_legs_by_hos
 from datetime import timedelta
 from django.utils import timezone
+from math import radians, sin, cos, sqrt, atan2
 
 def _resolve_label(leg_data, which: str) -> str:
     """
@@ -51,6 +52,37 @@ def plan_trip(trip: Trip):
         result = get_optimized_route(coordinates)
     else:
         result = get_route(coordinates)
+        geometry = result.get("geometry", [])
+
+    def haversine_distance_miles(lon1, lat1, lon2, lat2):
+        """
+        Simple helper to compute geodesic distance in miles
+        between two points (lon/lat in decimal degrees).
+        """
+        R = 3958.8  # Radius of Earth in miles
+        dlon = radians(lon2 - lon1)
+        dlat = radians(lat2 - lat1)
+        a = sin(dlat/2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon/2)**2
+        c = 2 * atan2(sqrt(a), sqrt(1-a))
+        return R * c
+
+    def build_cumulative_coords(route_coords):
+        """
+        route_coords is your entire polyline: [ (lon,lat), (lon,lat), ... ]
+        Returns a list of (cum_miles, lon, lat).
+        """
+        cum = []
+        total = 0.0
+        prev_lon, prev_lat = route_coords[0]
+        cum.append((0.0, prev_lon, prev_lat))
+
+        for (lon, lat) in route_coords[1:]:
+            dist_mi = haversine_distance_miles(prev_lon, prev_lat, lon, lat)
+            total += dist_mi
+            cum.append((total, lon, lat))
+            prev_lon, prev_lat = lon, lat
+
+        return cum
 
     # Save trip-level summary
     trip.planned_distance_miles = result["distance_miles"]
@@ -58,11 +90,20 @@ def plan_trip(trip: Trip):
     trip.save()
 
     geometry = result.get("geometry", [])
+    cum_coords = build_cumulative_coords(geometry)
+
     trip.legs.all().delete()
 
-    # Break the route into segments, then chunk by HOS
+    # Break the route into segments, then chunk by HOS with interpolation support
     segments = result.get("segments", [])
-    hos_legs = chunk_legs_by_hos(segments, coordinates, Decimal(trip.current_cycle_hours))
+    hos_legs = chunk_legs_by_hos(
+        segments=segments,
+        coordinates=coordinates,
+        start_cycle_hours=Decimal(trip.current_cycle_hours),
+        cum_coords=cum_coords,
+        total_route_distance=Decimal(result["distance_miles"])
+    )
+
 
     current_time = trip.departure_time
 

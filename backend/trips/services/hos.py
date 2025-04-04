@@ -12,7 +12,37 @@ FUEL_STOP_INTERVAL_MILES = Decimal("1000.0")
 FUEL_STOP_DURATION = Decimal("0.25")
 PICKUP_DROPOFF_DURATION = Decimal("1.0")
 
-def chunk_legs_by_hos(segments: List[dict], coordinates: List[list], start_cycle_hours: Decimal):
+def find_coord_at(cum_coords, target_miles):
+    """
+    Given the list of (cum_miles, lon, lat),
+    return an interpolated (lon, lat) for target_miles.
+    If target_miles is beyond the end, clamp to the last coordinate.
+    """
+    if target_miles <= 0:
+        return (cum_coords[0][1], cum_coords[0][2])  # (lon, lat)
+
+    # If beyond end, clamp:
+    if target_miles >= cum_coords[-1][0]:
+        return (cum_coords[-1][1], cum_coords[-1][2])
+
+    # Otherwise, binary search or linear search.
+    # We'll do a simple linear approach here for clarity:
+    for i in range(len(cum_coords) - 1):
+        distA, lonA, latA = cum_coords[i]
+        distB, lonB, latB = cum_coords[i+1]
+
+        if distA <= target_miles <= distB:
+            # We are in between i and i+1
+            ratio = (target_miles - distA) / (distB - distA)
+            # linear interpolation:
+            lon = lonA + ratio * (lonB - lonA)
+            lat = latA + ratio * (latB - latA)
+            return (lon, lat)
+
+    # Fallback (shouldn't happen if above checks are correct)
+    return (cum_coords[-1][1], cum_coords[-1][2])
+
+def chunk_legs_by_hos(segments, coordinates, start_cycle_hours, cum_coords, total_route_distance):
     """
     A fully incremental approach that:
       - Slices each segment into smaller partial drive legs
@@ -23,6 +53,7 @@ def chunk_legs_by_hos(segments: List[dict], coordinates: List[list], start_cycle
     """
     legs = []
     leg_order = 0
+    progress_miles = Decimal("0.0")  # how far along the route we are
 
     # Tracking
     current_cycle_hours = Decimal(start_cycle_hours)
@@ -45,6 +76,10 @@ def chunk_legs_by_hos(segments: List[dict], coordinates: List[list], start_cycle
         nonlocal current_drive_hours, drive_hours_since_break, miles_since_fuel
 
         last_leg = legs[-1] if legs else {}
+        # We place the event at the "end" of the last drive leg
+        # so that is find_coord_at(cum_coords, progress_miles)
+        event_lon, event_lat = find_coord_at(cum_coords, float(progress_miles))
+
         # If we already have a rest immediately prior, skip
         if is_rest and last_leg.get("is_rest_stop", False):
             return
@@ -53,11 +88,11 @@ def chunk_legs_by_hos(segments: List[dict], coordinates: List[list], start_cycle
             "leg_order": leg_order,
             "start_label": label,
             "end_label": label,
-            "start_lat": last_leg.get("end_lat"),
-            "start_lon": last_leg.get("end_lon"),
-            "end_lat": last_leg.get("end_lat"),
-            "end_lon": last_leg.get("end_lon"),
-            "distance_miles": Decimal("0.0"),
+            "start_lat": event_lat,
+            "start_lon": event_lon,
+            "end_lat": event_lat,
+            "end_lon": event_lon,
+            "distance_miles": 0.0,
             "duration_hours": duration_hrs,
             "is_rest_stop": is_rest,
             "is_fuel_stop": is_fuel,
@@ -77,30 +112,38 @@ def chunk_legs_by_hos(segments: List[dict], coordinates: List[list], start_cycle
             drive_hours_since_break = Decimal("0.0")
 
     # Helper: create a partial drive chunk
-    def add_drive_leg(distance_mi: Decimal, duration_hrs: Decimal, seg_index: int,
-                      start_coord, end_coord, steps=None):
+    def add_drive_leg(chunk_miles, duration_hrs, seg_index, steps=None):
         nonlocal leg_order, current_cycle_hours, duty_hours_since_rest
         nonlocal current_drive_hours, drive_hours_since_break, miles_since_fuel
-
+        nonlocal progress_miles
         if steps is None:
             steps = []
+        # Start coordinate
+        start_lon, start_lat = find_coord_at(cum_coords, float(progress_miles))
+        # End coordinate
+        end_lon, end_lat = find_coord_at(cum_coords, float(progress_miles + chunk_miles))
+
 
         legs.append({
             "leg_order": leg_order,
             "segment_index": seg_index,
             "start_label": None,
             "end_label": None,
-            "start_lat": start_coord[1],
-            "start_lon": start_coord[0],
-            "end_lat": end_coord[1],
-            "end_lon": end_coord[0],
-            "distance_miles": distance_mi,
+            "start_lat": start_lat,
+            "start_lon": start_lon,
+            "end_lat": end_lat,
+            "end_lon": end_lon,
+            "distance_miles": chunk_miles,
             "duration_hours": duration_hrs,
             "is_rest_stop": False,
             "is_fuel_stop": False,
             "notes": "",
             "steps": steps
         })
+        # advance the progress
+        progress_miles += chunk_miles
+        # update all your HOS counters, etc.
+
         leg_order += 1
 
         # Update counters
@@ -108,7 +151,7 @@ def chunk_legs_by_hos(segments: List[dict], coordinates: List[list], start_cycle
         duty_hours_since_rest += duration_hrs
         current_drive_hours += duration_hrs
         drive_hours_since_break += duration_hrs
-        miles_since_fuel += distance_mi
+        miles_since_fuel += chunk_miles
 
     for i, segment in enumerate(segments):
         seg_distance_miles = Decimal(segment["distance"])
@@ -198,7 +241,7 @@ def chunk_legs_by_hos(segments: List[dict], coordinates: List[list], start_cycle
             # 6) Create a partial drive leg
             start_coord = coordinates[i]
             end_coord = coordinates[i + 1]
-            add_drive_leg(chunk_miles, chunk_hrs, i, start_coord, end_coord, seg_steps)
+            add_drive_leg(chunk_miles, chunk_hrs, i, seg_steps)
 
             # 7) Subtract from the segment
             dist_left -= chunk_miles
