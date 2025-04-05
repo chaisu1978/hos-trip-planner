@@ -18,10 +18,11 @@ import LocationDrawer from "../trip/LocationDrawer";
 import AnimatedTripMap from "../trip/AnimatedTripMap";
 import { TripLeg } from "../../types/TripLeg";
 import { useSnackbar } from "../common/SnackbarProvider";
-import LoadingOverlay from "../common/LoadingOverlay";
 import apiClient from "../../services/auth";
-
 import { motion } from "framer-motion";
+import { useRef } from "react";
+import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
+import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 
 interface LocationData {
   label: string;
@@ -118,9 +119,21 @@ const TripPlanPage = () => {
     }
   };
 
-  {
-    submitting && <LoadingOverlay />;
-  }
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollByAmount = 250;
+
+  const scrollLeft = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: -scrollByAmount, behavior: "smooth" });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: scrollByAmount, behavior: "smooth" });
+    }
+  };
 
   return (
     <Box
@@ -147,7 +160,7 @@ const TripPlanPage = () => {
         width={{ xs: "100%", sm: "310px" }}
         minWidth={{ xs: "100%", sm: "310px" }}
         sx={{
-          borderRadius: { xs: "0px 16px 16px 0px", md: "0px 16px 0px 16px" },
+          borderRadius: "0px 16px 0px 16px",
           background: (theme) =>
             `linear-gradient(to bottom, ${theme.palette.background.paper}, ${theme.palette.highlight.light})`,
           position: { xs: "static", sm: "sticky" },
@@ -230,7 +243,7 @@ const TripPlanPage = () => {
         alignItems={"flex-start"}
         padding={"11px 24px 24px 24px"}
         gap={"16px"}
-        width={{ xs: "100%", sm: "auto" }}
+        width={{ xs: "100%", sm: "100%" }}
         sx={{
           backgroundColor: "background.default",
           border: "0px solid transparent",
@@ -267,40 +280,87 @@ const TripPlanPage = () => {
           >
             TRIP SUMMARY
           </Typography>
-          <Button
-            variant="contained"
-            size="medium"
-            color="secondary"
-            startIcon={<LibraryBooksIcon />}
-            sx={{
-              borderRadius: "24px",
-              padding: "8px 24px",
-            }}
-          >
-            DAILY LOGS
-          </Button>
-        </Box>
-        <Box
-          display="flex"
-          flexDirection="row"
-          flexWrap="wrap"
-          gap={1}
-          padding={1}
-          justifyContent="center"
-          alignItems="center"
-          sx={{ width: "100%", overflowX: "auto" }}
-        >
-          {trip?.legs?.map((leg: TripLeg, index: number) => (
-            <motion.div
-              key={leg.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.2, duration: 0.4 }}
+          {trip && (
+            <Button
+              variant="contained"
+              size="medium"
+              color="secondary"
+              startIcon={<LibraryBooksIcon />}
+              sx={{
+                borderRadius: "24px",
+                padding: "8px 24px",
+              }}
             >
-              <TripLegCard leg={leg} />
-            </motion.div>
-          ))}
+              DAILY LOGS
+            </Button>
+          )}
         </Box>
+        {trip && trip.legs?.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            style={{ width: "100%" }}
+          >
+            <Box
+              display="flex"
+              alignItems="center"
+              gap={1}
+              width="100%"
+              sx={{ overflow: "hidden" }}
+            >
+              <Button
+                onClick={scrollLeft}
+                variant="outlined"
+                size="small"
+                sx={{ minWidth: "40px", height: "40px", borderRadius: "20px" }}
+              >
+                <ArrowBackIosNewIcon fontSize="small" />
+              </Button>
+
+              <Box
+                ref={scrollRef}
+                display="flex"
+                flexDirection="row"
+                gap={2}
+                padding={1}
+                sx={{
+                  maxWidth: {
+                    xs: "100%",
+                    sm: "calc(100vw - 530px)",
+                  },
+                  overflowX: "auto",
+                  scrollbarWidth: "thin",
+                  scrollSnapType: "x mandatory",
+                  WebkitOverflowScrolling: "touch",
+                  scrollPadding: "1rem",
+                }}
+              >
+                {trip.legs.map((leg: TripLeg, index: number) => (
+                  <motion.div
+                    key={leg.id}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.3, duration: 0.4 }}
+                    style={{ scrollSnapAlign: "start", flexShrink: 0 }}
+                    onClick={() => setSelectedLegId(leg.id)} // 👈 next step uses this
+                  >
+                    <TripLegCard leg={leg} />
+                  </motion.div>
+                ))}
+              </Box>
+
+              <Button
+                onClick={scrollRight}
+                variant="outlined"
+                size="small"
+                sx={{ minWidth: "40px", height: "40px", borderRadius: "20px" }}
+              >
+                <ArrowForwardIosIcon fontSize="small" />
+              </Button>
+            </Box>
+          </motion.div>
+        )}
       </Box>
       <LocationDrawer
         // key forces remount on drawerType change

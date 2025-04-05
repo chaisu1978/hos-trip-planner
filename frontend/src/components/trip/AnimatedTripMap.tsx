@@ -68,7 +68,7 @@ export default function AnimatedTripMap({
       index++;
       setVisibleLegCount(index);
       if (index >= trip.legs.length) clearInterval(interval);
-    }, 500);
+    }, 300);
 
     return () => clearInterval(interval);
   }, [trip?.id]);
@@ -119,7 +119,7 @@ export default function AnimatedTripMap({
       center={[39.8283, -98.5795]}
       zoom={5}
       scrollWheelZoom={false}
-      style={{ width: "100%", height: "50vh" }}
+      style={{ width: "100%", height: "55vh" }}
       ref={mapRef}
     >
       <TileLayer

@@ -42,6 +42,21 @@ def find_coord_at(cum_coords, target_miles):
     # Fallback (shouldn't happen if above checks are correct)
     return (cum_coords[-1][1], cum_coords[-1][2])
 
+
+def slice_geometry_for_leg(cum_coords, start_miles, end_miles):
+    """
+    Returns a slice of the geometry from cum_coords between start_miles and end_miles.
+    Converts to (lat, lon) tuples for Leaflet.
+    """
+    coords = []
+    for cum_mi, lon, lat in cum_coords:
+        if start_miles <= cum_mi <= end_miles:
+            coords.append((lat, lon))  # Flip to (lat, lon) for Leaflet
+        elif cum_mi > end_miles:
+            break
+    return coords
+
+
 def chunk_legs_by_hos(segments, coordinates, start_cycle_hours, cum_coords, total_route_distance):
     """
     A fully incremental approach that:
@@ -124,6 +139,12 @@ def chunk_legs_by_hos(segments, coordinates, start_cycle_hours, cum_coords, tota
         end_lon, end_lat = find_coord_at(cum_coords, float(progress_miles + chunk_miles))
 
 
+        geometry_slice = slice_geometry_for_leg(
+            cum_coords,
+            float(progress_miles),
+            float(progress_miles + chunk_miles)
+        )
+
         legs.append({
             "leg_order": leg_order,
             "segment_index": seg_index,
@@ -138,8 +159,10 @@ def chunk_legs_by_hos(segments, coordinates, start_cycle_hours, cum_coords, tota
             "is_rest_stop": False,
             "is_fuel_stop": False,
             "notes": "",
-            "steps": steps
+            "steps": steps,
+            "polyline_geometry": geometry_slice,  # 👈 the new line!
         })
+
         # advance the progress
         progress_miles += chunk_miles
         # update all your HOS counters, etc.

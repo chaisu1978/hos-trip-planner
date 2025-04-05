@@ -179,12 +179,6 @@ def plan_trip(trip: Trip):
         current_time += timedelta(seconds=duration_seconds)
         leg_data["arrival_time"] = current_time
 
-        # Optionally store geometry for the first driving chunk
-        # If you want partial geometry for each chunk, you'd slice it by step indexes
-        if is_drive and geometry:
-            leg_data["polyline_geometry"] = [(lat, lon) for lon, lat in geometry]
-            geometry = []
-
         # Create the DB record
         new_leg = TripLeg.objects.create(
             trip=trip,
