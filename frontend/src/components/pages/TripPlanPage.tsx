@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   useTheme,
   Box,
@@ -17,20 +17,10 @@ import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
 import LocationDrawer from "../trip/LocationDrawer";
 import AnimatedTripMap from "../trip/AnimatedTripMap";
 import { TripLeg } from "../../types/TripLeg";
-import { createThemedMarkerIcon } from "../../utils/createThemedMarkerIcon";
 import { useSnackbar } from "../common/SnackbarProvider";
 import LoadingOverlay from "../common/LoadingOverlay";
 import apiClient from "../../services/auth";
-// leaflet
-import L from "leaflet";
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  Polyline,
-  useMap,
-} from "react-leaflet";
+
 import { motion } from "framer-motion";
 
 interface LocationData {
@@ -60,10 +50,6 @@ const TripPlanPage = () => {
   const { showSnackbar } = useSnackbar();
   const theme = useTheme();
 
-  const currentIcon = createThemedMarkerIcon(theme, "error");
-  const pickupIcon = createThemedMarkerIcon(theme, "info");
-  const dropoffIcon = createThemedMarkerIcon(theme, "success");
-
   const handleOpenDrawer = (type: "current" | "pickup" | "dropoff") => {
     setDrawerType(type);
     setDrawerOpen(true);
@@ -76,19 +62,6 @@ const TripPlanPage = () => {
 
     setDrawerOpen(false);
     setDrawerType(null);
-  };
-
-  const MapAutoFit = ({ points }: { points: [number, number][] }) => {
-    const map = useMap();
-
-    useEffect(() => {
-      if (points.length === 0) return;
-
-      const bounds = L.latLngBounds(points);
-      map.fitBounds(bounds, { padding: [50, 50] }); // optional padding
-    }, [points, map]);
-
-    return null;
   };
 
   const handleSubmitTrip = async () => {
@@ -145,15 +118,6 @@ const TripPlanPage = () => {
     }
   };
 
-  const getLatLngTuple = (loc: LocationData | null): [number, number] | null =>
-    loc ? [loc.lat, loc.lon] : null;
-
-  const points = [
-    getLatLngTuple(currentLocation),
-    getLatLngTuple(pickupLocation),
-    getLatLngTuple(dropoffLocation),
-  ].filter(Boolean) as [number, number][];
-
   {
     submitting && <LoadingOverlay />;
   }
@@ -180,7 +144,7 @@ const TripPlanPage = () => {
         alignItems={"center"}
         padding={"11px 16px 16px 16px"}
         gap={"12px"}
-        width={{ xs: "100%", sm: "25%" }}
+        width={{ xs: "100%", sm: "310px" }}
         minWidth={{ xs: "100%", sm: "310px" }}
         sx={{
           borderRadius: { xs: "0px 16px 16px 0px", md: "0px 16px 0px 16px" },
@@ -266,7 +230,7 @@ const TripPlanPage = () => {
         alignItems={"flex-start"}
         padding={"11px 24px 24px 24px"}
         gap={"16px"}
-        width={{ xs: "100%", sm: "75%" }}
+        width={{ xs: "100%", sm: "auto" }}
         sx={{
           backgroundColor: "background.default",
           border: "0px solid transparent",
@@ -319,8 +283,11 @@ const TripPlanPage = () => {
         <Box
           display="flex"
           flexDirection="row"
-          gap="0"
-          padding="0"
+          flexWrap="wrap"
+          gap={1}
+          padding={1}
+          justifyContent="center"
+          alignItems="center"
           sx={{ width: "100%", overflowX: "auto" }}
         >
           {trip?.legs?.map((leg: TripLeg, index: number) => (

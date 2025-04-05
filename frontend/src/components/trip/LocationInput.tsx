@@ -48,9 +48,9 @@ const LocationInput = ({
       <Badge
         color={
           baseLabel === "CURRENT LOCATION"
-            ? "error"
+            ? "warning"
             : baseLabel === "PICKUP LOCATION"
-              ? "primary"
+              ? "warning"
               : baseLabel === "DROPOFF LOCATION"
                 ? "success"
                 : "success"

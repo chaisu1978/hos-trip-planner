@@ -4,7 +4,7 @@ import { Theme } from "@mui/material";
 export const createThemedMarkerIcon = (
   theme: Theme,
   color: "primary" | "secondary" | "error" | "warning" | "success" | "info",
-  size: number = 24
+  size: number = 28
 ) => {
   const hexColor = theme.palette[color].main;
 

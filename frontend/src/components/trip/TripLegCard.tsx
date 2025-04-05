@@ -4,7 +4,6 @@ import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
 import HotelIcon from "@mui/icons-material/Hotel";
 import LocalGasStationIcon from "@mui/icons-material/LocalGasStation";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
-import StraightenIcon from "@mui/icons-material/Straighten";
 import { TripLeg } from "../../types/TripLeg";
 
 const legIcons = {
@@ -21,21 +20,24 @@ export default function TripLegCard({ leg }: { leg: TripLeg }) {
   return (
     <motion.div whileHover={{ scale: 1.02 }} style={{ width: "100%" }}>
       <Box
-        borderRadius="16px"
-        boxShadow={2}
-        padding={2}
+        borderRadius="0 16px 0 16px"
+        boxShadow={1}
+        padding={1}
         bgcolor="background.paper"
         display="flex"
         flexDirection="column"
         gap={0}
+        marginRight={1}
+        minHeight={"95px"}
+        minWidth={"250px"}
         sx={{
-          borderLeft: "8px solid",
-          borderColor: (theme) => theme.palette.success.main,
+          borderLeft: "4px solid",
+          borderColor: (theme) => theme.palette.secondary.main,
         }}
       >
         <Box display="flex" alignItems="center" gap={0}>
           {icon}
-          <Typography variant="h6" fontWeight={500}>
+          <Typography variant="body1" mr={1.5} fontWeight={500}>
             {leg.leg_type.toUpperCase()}
           </Typography>
           <Chip

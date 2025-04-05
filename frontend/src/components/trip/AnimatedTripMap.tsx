@@ -106,11 +106,11 @@ export default function AnimatedTripMap({
   };
 
   const legTypeColorMap: Record<string, MUIColor> = {
-    pickup: "primary",
-    dropoff: "secondary",
+    pickup: "warning",
+    dropoff: "success",
     drive: "success",
     rest: "info",
-    break: "warning",
+    break: "info",
     fuel: "error",
   };
 
@@ -119,7 +119,7 @@ export default function AnimatedTripMap({
       center={[39.8283, -98.5795]}
       zoom={5}
       scrollWheelZoom={false}
-      style={{ width: "100%", height: "55vh" }}
+      style={{ width: "100%", height: "50vh" }}
       ref={mapRef}
     >
       <TileLayer
@@ -130,8 +130,8 @@ export default function AnimatedTripMap({
 
       {/* User-selected locations */}
       {[
-        { loc: current, color: "error" as MUIColor, label: "CURRENT" },
-        { loc: pickup, color: "info" as MUIColor, label: "PICKUP" },
+        { loc: current, color: "warning" as MUIColor, label: "CURRENT" },
+        { loc: pickup, color: "warning" as MUIColor, label: "PICKUP" },
         { loc: dropoff, color: "success" as MUIColor, label: "DROPOFF" },
       ]
         .filter(({ loc }) => !!loc)
@@ -180,7 +180,8 @@ export default function AnimatedTripMap({
 
         const icon = createThemedMarkerIcon(
           theme,
-          legTypeColorMap[leg.leg_type] ?? "info"
+          legTypeColorMap[leg.leg_type] ?? "info",
+          16
         );
 
         // Get a safe position: use start of polyline if available
