@@ -4,9 +4,14 @@ import WatchLaterIcon from "@mui/icons-material/WatchLater";
 interface CycleHoursInputProps {
   value: number;
   onChange: (value: number) => void;
+  disabled?: boolean;
 }
 
-const CycleHoursInput = ({ value, onChange }: CycleHoursInputProps) => {
+const CycleHoursInput = ({
+  value,
+  onChange,
+  disabled,
+}: CycleHoursInputProps) => {
   const handleSliderChange = (_: Event, newValue: number | number[]) => {
     onChange(typeof newValue === "number" ? newValue : newValue[0]);
   };
@@ -67,6 +72,7 @@ const CycleHoursInput = ({ value, onChange }: CycleHoursInputProps) => {
           min={0}
           max={70}
           step={0.25}
+          disabled={disabled}
           onChange={handleSliderChange}
           sx={{
             width: "75%",
@@ -80,6 +86,7 @@ const CycleHoursInput = ({ value, onChange }: CycleHoursInputProps) => {
         <TextField
           type="number"
           value={value}
+          disabled={disabled}
           onChange={handleInputChange}
           inputProps={{ min: 0, max: 70, step: 0.25 }}
           label="Hours"

@@ -52,6 +52,8 @@ const TripPlanPage = () => {
   const { showSnackbar } = useSnackbar();
   const theme = useTheme();
 
+  const tripPlanned = !!trip;
+
   const handleOpenDrawer = (type: "current" | "pickup" | "dropoff") => {
     setDrawerType(type);
     setDrawerOpen(true);
@@ -155,6 +157,20 @@ const TripPlanPage = () => {
     }
   };
 
+  const handleResetTrip = () => {
+    setCurrentLocation(null);
+    setPickupLocation(null);
+    setDropoffLocation(null);
+    setCycleHours(0);
+    setTrip(null);
+    setSelectedLegId(null);
+
+    // Close all marker popups
+    Object.values(markerRefs.current).forEach((marker) => {
+      if (marker?.closePopup) marker.closePopup();
+    });
+  };
+
   return (
     <Box
       id="trip-plan-page-start"
@@ -201,6 +217,7 @@ const TripPlanPage = () => {
           value={currentLocation || undefined}
           onClick={() => handleOpenDrawer("current")}
           onClear={() => setCurrentLocation(null)}
+          disabled={tripPlanned}
         />
         <LocationInput
           icon={<ArchiveIcon />}
@@ -209,6 +226,7 @@ const TripPlanPage = () => {
           value={pickupLocation || undefined}
           onClick={() => handleOpenDrawer("pickup")}
           onClear={() => setPickupLocation(null)}
+          disabled={tripPlanned}
         />
         <LocationInput
           icon={<UnarchiveIcon />}
@@ -217,9 +235,14 @@ const TripPlanPage = () => {
           description="Where are you delivering your load? Includes a one hour unloading delay in trip plan."
           onClick={() => handleOpenDrawer("dropoff")}
           onClear={() => setDropoffLocation(null)}
+          disabled={tripPlanned}
         />
 
-        <CycleHoursInput value={cycleHours} onChange={setCycleHours} />
+        <CycleHoursInput
+          value={cycleHours}
+          onChange={setCycleHours}
+          disabled={tripPlanned}
+        />
 
         <motion.div
           animate={{
@@ -231,30 +254,40 @@ const TripPlanPage = () => {
           transition={{ duration: 0.2 }}
           style={{ width: "100%" }}
         >
-          <Button
-            variant="contained"
-            size="large"
-            color="secondary"
-            startIcon={
-              submitting ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : (
-                <CalendarMonthIcon />
-              )
-            }
-            fullWidth
-            disabled={
-              !(currentLocation && pickupLocation && dropoffLocation) ||
-              submitting
-            }
-            sx={{
-              borderRadius: "24px",
-              padding: "8px",
-            }}
-            onClick={handleSubmitTrip}
-          >
-            PLAN TRIP
-          </Button>
+          {trip ? (
+            <Button
+              variant="contained"
+              size="large"
+              color="primary"
+              onClick={handleResetTrip}
+              fullWidth
+              sx={{ borderRadius: "24px", padding: "8px" }}
+            >
+              PLAN NEW TRIP
+            </Button>
+          ) : (
+            <Button
+              variant="contained"
+              size="large"
+              color="secondary"
+              startIcon={
+                submitting ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  <CalendarMonthIcon />
+                )
+              }
+              fullWidth
+              disabled={
+                !(currentLocation && pickupLocation && dropoffLocation) ||
+                submitting
+              }
+              sx={{ borderRadius: "24px", padding: "8px" }}
+              onClick={handleSubmitTrip}
+            >
+              PLAN TRIP
+            </Button>
+          )}
         </motion.div>
       </Box>
       <Box

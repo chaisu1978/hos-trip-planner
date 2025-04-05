@@ -15,6 +15,7 @@ interface LocationInputProps {
     lon: number;
   };
   onClear?: () => void;
+  disabled?: boolean;
 }
 
 const LocationInput = ({
@@ -25,6 +26,7 @@ const LocationInput = ({
   size = "medium",
   value,
   onClear,
+  disabled,
 }: LocationInputProps) => {
   const action = value ? "EDIT" : "SET";
   const label = `${action} ${baseLabel}`;
@@ -73,7 +75,7 @@ const LocationInput = ({
           },
         }}
       />
-      {value && onClear && (
+      {!disabled && value && onClear && (
         <Button
           onClick={onClear}
           size="small"
@@ -100,6 +102,7 @@ const LocationInput = ({
         color="primary"
         startIcon={icon}
         fullWidth
+        disabled={disabled}
         onClick={onClick}
         sx={{ borderRadius: "24px", padding: "8px" }}
       >
