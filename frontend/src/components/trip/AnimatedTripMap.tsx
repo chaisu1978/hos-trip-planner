@@ -1,4 +1,8 @@
-// frontend/src/components/trip/AnimatedTripMap.tsx
+import { Typography, Box } from "@mui/material";
+import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
+import HotelIcon from "@mui/icons-material/Hotel";
+import LocalGasStationIcon from "@mui/icons-material/LocalGasStation";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import {
   MapContainer,
   TileLayer,
@@ -43,6 +47,7 @@ interface AnimatedTripMapProps {
     pickup: LocationData | null;
     dropoff: LocationData | null;
   };
+  markerRefs?: React.MutableRefObject<Record<number, any>>;
 }
 
 export default function AnimatedTripMap({
@@ -51,12 +56,13 @@ export default function AnimatedTripMap({
   selectedLegId,
   onLegSelect,
   locationMarkers,
+  markerRefs,
 }: AnimatedTripMapProps) {
   const { current, pickup, dropoff } = locationMarkers;
 
   const [visibleLegCount, setVisibleLegCount] = useState(0);
   const mapRef = useRef<any>(null);
-  const markerRefs = useRef<Record<number, any>>({});
+  const localMarkerRefs = markerRefs ?? useRef<Record<number, any>>({});
 
   // Animate legs sequentially
   useEffect(() => {
@@ -68,7 +74,7 @@ export default function AnimatedTripMap({
       index++;
       setVisibleLegCount(index);
       if (index >= trip.legs.length) clearInterval(interval);
-    }, 300);
+    }, 350);
 
     return () => clearInterval(interval);
   }, [trip?.id]);
@@ -112,6 +118,15 @@ export default function AnimatedTripMap({
     rest: "info",
     break: "info",
     fuel: "error",
+  };
+
+  const legIcons = {
+    drive: <DirectionsCarIcon fontSize="small" />,
+    rest: <HotelIcon fontSize="small" />,
+    fuel: <LocalGasStationIcon fontSize="small" />,
+    break: <AccessTimeIcon fontSize="small" />,
+    pickup: <AccessTimeIcon fontSize="small" />,
+    dropoff: <AccessTimeIcon fontSize="small" />,
   };
 
   return (
@@ -178,10 +193,11 @@ export default function AnimatedTripMap({
         const isDriveLeg = leg.leg_type === "drive";
         if (isDriveLeg) return null;
 
-        const icon = createThemedMarkerIcon(
-          theme,
-          legTypeColorMap[leg.leg_type] ?? "info",
-          16
+        const legType = leg.leg_type;
+        const colorKey = legTypeColorMap[legType] ?? "info";
+        const iconMarker = createThemedMarkerIcon(theme, colorKey, 16);
+        const icon = legIcons[legType as keyof typeof legIcons] ?? (
+          <AccessTimeIcon fontSize="small" />
         );
 
         // Get a safe position: use start of polyline if available
@@ -229,19 +245,48 @@ export default function AnimatedTripMap({
           <Marker
             key={`marker-${leg.id}`}
             position={[lat, lon]}
-            icon={icon}
+            icon={iconMarker}
             eventHandlers={{
               click: () => {
                 onLegSelect(leg.id);
-                markerRefs.current[leg.id]?.openPopup();
+                localMarkerRefs.current[leg.id]?.openPopup();
               },
             }}
-            ref={(el) => (markerRefs.current[leg.id] = el)}
+            ref={(el) => (localMarkerRefs.current[leg.id] = el)}
           >
             <Popup>
-              <strong>{leg.leg_type.toUpperCase()}</strong>
-              <br />
-              {leg.notes || leg.start_label || leg.end_label || "No label"}
+              <Box
+                display="flex"
+                flexDirection="column"
+                alignItems="flex-start"
+                p={1}
+                sx={{
+                  borderLeft: `4px solid ${theme.palette[colorKey].main}`,
+                  minWidth: "200px",
+                }}
+              >
+                <Box display="flex" alignItems="center" gap={1} mb={1}>
+                  <Box
+                    width={28}
+                    height={28}
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    borderRadius="50%"
+                    bgcolor={theme.palette[colorKey].main}
+                    color="#fff"
+                  >
+                    {icon}
+                  </Box>
+                  <Typography variant="subtitle2" fontWeight="bold">
+                    {legType.toUpperCase()}
+                  </Typography>
+                </Box>
+
+                <Typography fontSize="0.85rem">
+                  {leg.notes || leg.start_label || leg.end_label || "No label"}
+                </Typography>
+              </Box>
             </Popup>
           </Marker>
         );

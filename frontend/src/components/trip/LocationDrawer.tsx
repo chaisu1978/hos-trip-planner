@@ -184,44 +184,6 @@ const LocationDrawer = ({
 
       {/* Body */}
       <Box p={2} display="flex" flexDirection="column" gap={2}>
-        {type === "current" && (
-          <Button
-            variant="contained"
-            size="small"
-            disabled={locating}
-            onClick={async () => {
-              setLocating(true);
-              navigator.geolocation.getCurrentPosition(
-                async (pos) => {
-                  const { latitude, longitude } = pos.coords;
-                  const label = await fetchReverseGeocode(latitude, longitude);
-                  setCenter([latitude, longitude]);
-                  setQuery(label);
-                  mapRef.current?.setView([latitude, longitude], 11);
-                  setLocating(false);
-
-                  showSnackbar("Location detected successfully!", "success"); // SUCCESS SNACKBAR
-                },
-                (error) => {
-                  console.error("Geolocation error:", error);
-                  setLocating(false);
-
-                  showSnackbar(
-                    "Unable to retrieve your location. Please check permissions or try again.",
-                    "error"
-                  ); // ERROR SNACKBAR
-                }
-              );
-            }}
-            startIcon={
-              locating ? (
-                <CircularProgress color="inherit" size={16} />
-              ) : undefined
-            }
-          >
-            {locating ? "Getting Location..." : "Use My Location"}
-          </Button>
-        )}
         <Autocomplete
           freeSolo
           disableClearable
@@ -260,6 +222,17 @@ const LocationDrawer = ({
             />
           )}
         />
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={handleConfirm}
+          sx={{
+            borderRadius: "24px",
+            padding: "8px",
+          }}
+        >
+          Confirm Location
+        </Button>
 
         <Box position="relative" height="400px">
           <MapContainer
@@ -300,18 +273,44 @@ const LocationDrawer = ({
         <Typography variant="body2" align="center">
           Drag the map to place the pin on your desired location.
         </Typography>
+        {type === "current" && (
+          <Button
+            variant="contained"
+            size="small"
+            disabled={locating}
+            onClick={async () => {
+              setLocating(true);
+              navigator.geolocation.getCurrentPosition(
+                async (pos) => {
+                  const { latitude, longitude } = pos.coords;
+                  const label = await fetchReverseGeocode(latitude, longitude);
+                  setCenter([latitude, longitude]);
+                  setQuery(label);
+                  mapRef.current?.setView([latitude, longitude], 11);
+                  setLocating(false);
 
-        <Button
-          variant="contained"
-          color="secondary"
-          onClick={handleConfirm}
-          sx={{
-            borderRadius: "24px",
-            padding: "8px",
-          }}
-        >
-          Confirm Location
-        </Button>
+                  showSnackbar("Location detected successfully!", "success"); // SUCCESS SNACKBAR
+                },
+                (error) => {
+                  console.error("Geolocation error:", error);
+                  setLocating(false);
+
+                  showSnackbar(
+                    "Unable to retrieve your location. Please check permissions or try again.",
+                    "error"
+                  ); // ERROR SNACKBAR
+                }
+              );
+            }}
+            startIcon={
+              locating ? (
+                <CircularProgress color="inherit" size={16} />
+              ) : undefined
+            }
+          >
+            {locating ? "Getting Location..." : "Use My Location"}
+          </Button>
+        )}
       </Box>
     </Drawer>
   );

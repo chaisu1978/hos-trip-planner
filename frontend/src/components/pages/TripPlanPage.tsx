@@ -23,6 +23,7 @@ import { motion } from "framer-motion";
 import { useRef } from "react";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+import LoadingOverlay from "../common/LoadingOverlay";
 
 interface LocationData {
   label: string;
@@ -135,6 +136,25 @@ const TripPlanPage = () => {
     }
   };
 
+  const markerRefs = useRef<Record<number, any>>({});
+
+  const handleLegCardClick = (leg: TripLeg) => {
+    // Close any open marker popups
+    Object.values(markerRefs.current).forEach((marker) => {
+      if (marker?.closePopup) marker.closePopup();
+    });
+
+    setSelectedLegId(leg.id);
+
+    // Open popup only for non-drive legs
+    if (leg.leg_type !== "drive") {
+      const marker = markerRefs.current[leg.id];
+      if (marker) {
+        marker.openPopup();
+      }
+    }
+  };
+
   return (
     <Box
       id="trip-plan-page-start"
@@ -149,6 +169,8 @@ const TripPlanPage = () => {
         minHeight: "85vh", // Instead of fixed height
       }}
     >
+      {submitting && <LoadingOverlay />}
+
       <Box
         id="inputs"
         display={"flex"}
@@ -249,7 +271,7 @@ const TripPlanPage = () => {
           border: "0px solid transparent",
           boxShadow: 1,
           borderRadius: "4px",
-          minHeight: "85vh",
+          // minHeight: "85vh",
           color: "text.primary",
         }}
       >
@@ -259,6 +281,7 @@ const TripPlanPage = () => {
           theme={theme}
           selectedLegId={selectedLegId}
           onLegSelect={setSelectedLegId}
+          markerRefs={markerRefs}
           locationMarkers={{
             current: currentLocation,
             pickup: pickupLocation,
@@ -343,9 +366,12 @@ const TripPlanPage = () => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.3, duration: 0.4 }}
                     style={{ scrollSnapAlign: "start", flexShrink: 0 }}
-                    onClick={() => setSelectedLegId(leg.id)} // 👈 next step uses this
+                    onClick={() => handleLegCardClick(leg)}
                   >
-                    <TripLegCard leg={leg} />
+                    <TripLegCard
+                      leg={leg}
+                      onClick={() => handleLegCardClick(leg)}
+                    />
                   </motion.div>
                 ))}
               </Box>
