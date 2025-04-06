@@ -139,6 +139,7 @@ const TripPlanPage = () => {
   };
 
   const markerRefs = useRef<Record<number, any>>({});
+  const mapRefFn = useRef<((lat: number, lon: number) => void) | null>(null);
 
   const handleLegCardClick = (leg: TripLeg) => {
     // Close any open marker popups
@@ -148,11 +149,17 @@ const TripPlanPage = () => {
 
     setSelectedLegId(leg.id);
 
-    // Open popup only for non-drive legs
-    if (leg.leg_type !== "drive") {
-      const marker = markerRefs.current[leg.id];
-      if (marker) {
+    const marker = markerRefs.current[leg.id];
+    if (marker) {
+      // Open the popup (already done below)
+      if (leg.leg_type !== "drive") {
         marker.openPopup();
+      }
+
+      // Center the map on the marker
+      const latLng = marker.getLatLng?.();
+      if (latLng && mapRefFn.current) {
+        mapRefFn.current(latLng.lat, latLng.lng);
       }
     }
   };
@@ -319,6 +326,9 @@ const TripPlanPage = () => {
             current: currentLocation,
             pickup: pickupLocation,
             dropoff: dropoffLocation,
+          }}
+          onCenterMap={(fn) => {
+            mapRefFn.current = fn;
           }}
         />
         <Box

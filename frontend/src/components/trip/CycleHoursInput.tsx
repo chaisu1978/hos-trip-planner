@@ -43,7 +43,7 @@ const CycleHoursInput = ({
           display: "flex",
           flexDirection: "row",
           justifyContent: "center",
-          backgroundColor: "background.paper",
+          backgroundColor: disabled ? "grey" : "background.default",
           color: "text.branda",
           borderRadius: "24px",
           padding: "8px 16px",

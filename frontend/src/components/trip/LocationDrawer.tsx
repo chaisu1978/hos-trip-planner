@@ -238,7 +238,7 @@ const LocationDrawer = ({
           <MapContainer
             center={center}
             zoom={5}
-            scrollWheelZoom={false}
+            scrollWheelZoom={true}
             style={{ width: "100%", height: "100%", zIndex: 0 }}
             ref={mapRef}
           >
