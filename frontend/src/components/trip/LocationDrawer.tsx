@@ -208,6 +208,7 @@ const LocationDrawer = ({
               label="Search location"
               variant="outlined"
               size="small"
+              sx={{ backgroundColor: "background.default", borderRadius: 1 }}
               InputProps={{
                 ...params.InputProps,
                 endAdornment: (

@@ -12,7 +12,6 @@ import {
   Popup,
   useMap,
 } from "react-leaflet";
-import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import { TripLeg } from "../../types/TripLeg";

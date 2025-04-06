@@ -24,7 +24,6 @@ import { useRef } from "react";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import LoadingOverlay from "../common/LoadingOverlay";
-import { Start } from "@mui/icons-material";
 
 interface LocationData {
   label: string;
@@ -113,7 +112,12 @@ const TripPlanPage = () => {
       showSnackbar("Trip planned successfully!", "success");
 
       setTrip({ ...response.data, legs }); // override legs with normalized version
-
+      if (mapSectionRef.current) {
+        mapSectionRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
       // TODO: Store trip in local state for summary/logbook display
     } catch (error) {
       console.error("Trip planning failed", error);
@@ -141,6 +145,7 @@ const TripPlanPage = () => {
 
   const markerRefs = useRef<Record<number, any>>({});
   const mapRefFn = useRef<((lat: number, lon: number) => void) | null>(null);
+  const mapSectionRef = useRef<HTMLDivElement>(null);
 
   const handleLegCardClick = (leg: TripLeg) => {
     // Close any open marker popups
@@ -316,22 +321,24 @@ const TripPlanPage = () => {
           color: "text.primary",
         }}
       >
-        {/* leaflet map full width, 65vh */}
-        <AnimatedTripMap
-          trip={trip}
-          theme={theme}
-          selectedLegId={selectedLegId}
-          onLegSelect={setSelectedLegId}
-          markerRefs={markerRefs}
-          locationMarkers={{
-            current: currentLocation,
-            pickup: pickupLocation,
-            dropoff: dropoffLocation,
-          }}
-          onCenterMap={(fn) => {
-            mapRefFn.current = fn;
-          }}
-        />
+        {/* leaflet map full width, 55vh */}
+        <Box ref={mapSectionRef} sx={{ width: "100%", height: "auto" }}>
+          <AnimatedTripMap
+            trip={trip}
+            theme={theme}
+            selectedLegId={selectedLegId}
+            onLegSelect={setSelectedLegId}
+            markerRefs={markerRefs}
+            locationMarkers={{
+              current: currentLocation,
+              pickup: pickupLocation,
+              dropoff: dropoffLocation,
+            }}
+            onCenterMap={(fn) => {
+              mapRefFn.current = fn;
+            }}
+          />
+        </Box>
         <Box
           id="trip-summary-header"
           display={"flex"}
