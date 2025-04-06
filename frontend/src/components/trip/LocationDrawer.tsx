@@ -17,6 +17,8 @@ import { useRef, useState, useCallback } from "react";
 import { debounce } from "../../utils/debounce";
 import apiClient from "../../services/auth";
 import { useSnackbar } from "../common/SnackbarProvider";
+import CheckIcon from "@mui/icons-material/Check";
+import MyLocationIcon from "@mui/icons-material/MyLocation";
 
 interface Props {
   open: boolean;
@@ -77,6 +79,7 @@ const LocationDrawer = ({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [locating, setLocating] = useState(false);
 
   const { showSnackbar } = useSnackbar();
@@ -113,13 +116,14 @@ const LocationDrawer = ({
   };
 
   const handleConfirm = async () => {
+    setConfirming(true);
     const [lat, lon] = center;
     const label = await fetchReverseGeocode(lat, lon);
     onSelect({ label, lat, lon });
     setQuery("");
     setResults([]);
+    setConfirming(false);
   };
-
   // When the drawer opens, update query + center
   useEffect(() => {
     if (!open) return;
@@ -187,6 +191,7 @@ const LocationDrawer = ({
         <Autocomplete
           freeSolo
           disableClearable
+          sx={{ borderRadius: 1 }}
           options={results}
           loading={loading}
           inputValue={query}
@@ -207,8 +212,13 @@ const LocationDrawer = ({
               {...params}
               label="Search location"
               variant="outlined"
-              size="small"
-              sx={{ backgroundColor: "background.default", borderRadius: 1 }}
+              size="medium"
+              sx={{
+                backgroundColor: "background.default",
+                borderRadius: 1,
+                border: 0,
+                color: "text.primary",
+              }}
               InputProps={{
                 ...params.InputProps,
                 endAdornment: (
@@ -227,12 +237,20 @@ const LocationDrawer = ({
           variant="contained"
           color="secondary"
           onClick={handleConfirm}
+          disabled={confirming}
+          startIcon={
+            confirming ? (
+              <CircularProgress color="inherit" size={16} />
+            ) : (
+              <CheckIcon />
+            )
+          }
           sx={{
             borderRadius: "24px",
             padding: "8px",
           }}
         >
-          Confirm Location
+          {confirming ? "Saving..." : "Confirm Location"}
         </Button>
 
         <Box position="relative" height="400px">
@@ -290,7 +308,7 @@ const LocationDrawer = ({
                   mapRef.current?.setView([latitude, longitude], 11);
                   setLocating(false);
 
-                  showSnackbar("Location detected successfully!", "success"); // SUCCESS SNACKBAR
+                  showSnackbar("Location detected successfully!", "success");
                 },
                 (error) => {
                   console.error("Geolocation error:", error);
@@ -299,14 +317,16 @@ const LocationDrawer = ({
                   showSnackbar(
                     "Unable to retrieve your location. Please check permissions or try again.",
                     "error"
-                  ); // ERROR SNACKBAR
+                  );
                 }
               );
             }}
             startIcon={
               locating ? (
                 <CircularProgress color="inherit" size={16} />
-              ) : undefined
+              ) : (
+                <MyLocationIcon />
+              )
             }
           >
             {locating ? "Getting Location..." : "Use My Location"}

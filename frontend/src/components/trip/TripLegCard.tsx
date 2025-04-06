@@ -40,21 +40,12 @@ export default function TripLegCard({
 
   return (
     <motion.div whileHover={{ scale: 1.02 }} style={{ width: "100%" }}>
-      <ButtonBase
-        onClick={onClick}
-        sx={{
-          width: "100%",
-          textAlign: "left",
-        }}
-      >
+      <ButtonBase onClick={onClick} sx={{ width: "100%", textAlign: "left" }}>
         <Box
           boxShadow={1}
-          padding={1}
+          padding={1.5}
           bgcolor="background.paper"
-          display="flex"
-          flexDirection="column"
-          gap={0}
-          minHeight={"95px"}
+          minHeight={"108px"}
           minWidth={"250px"}
           sx={{
             width: "100%",
@@ -63,43 +54,58 @@ export default function TripLegCard({
             borderRadius: "0 16px 0 16px",
           }}
         >
-          <Box display="flex" alignItems="center" gap={1}>
-            <Box
-              width={32}
-              height={32}
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              borderRadius="50%"
-              bgcolor={color}
-              color="#fff"
-            >
-              {icon}
+          {/* Top-level layout: left = content, right = chips */}
+          <Box display="flex" justifyContent="space-between" gap={2}>
+            {/* Left column: icon + title + label + notes */}
+            <Box display="flex" flexDirection="column" gap={0.75} flex={1}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <Box
+                  width={32}
+                  height={32}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  borderRadius="50%"
+                  bgcolor={color}
+                  color="#fff"
+                >
+                  {icon}
+                </Box>
+                <Typography variant="body1" fontWeight={500}>
+                  {leg.leg_type.toUpperCase()}
+                </Typography>
+              </Box>
+
+              <Typography fontSize="0.9rem" color="text.secondary">
+                {leg.start_label}
+              </Typography>
+
+              {leg.notes && (
+                <Typography fontSize="0.75rem" color="text.secondary">
+                  {leg.notes}
+                </Typography>
+              )}
             </Box>
 
-            <Typography variant="body1" fontWeight={500}>
-              {leg.leg_type.toUpperCase()}
-            </Typography>
-
-            <Chip
-              label={`${Number(leg.duration_hours ?? 0).toFixed(2)} hrs`}
-              size="small"
-            />
-            <Chip
-              label={`${Number(leg.distance_miles ?? 0).toFixed(1)} mi`}
-              size="small"
-            />
+            {/* Right column: stacked chips */}
+            <Box
+              display="flex"
+              flexDirection="column"
+              alignItems="flex-end"
+              justifyContent="flex-start"
+              gap={0.5}
+              minWidth="fit-content"
+            >
+              <Chip
+                label={`${Number(leg.duration_hours ?? 0).toFixed(2)} hrs`}
+                size="small"
+              />
+              <Chip
+                label={`${Number(leg.distance_miles ?? 0).toFixed(1)} mi`}
+                size="small"
+              />
+            </Box>
           </Box>
-
-          <Typography fontSize="0.9rem" color="text.secondary">
-            {leg.start_label}
-          </Typography>
-
-          {leg.notes && (
-            <Typography fontSize="0.85rem" color="text.secondary">
-              {leg.notes}
-            </Typography>
-          )}
         </Box>
       </ButtonBase>
     </motion.div>
