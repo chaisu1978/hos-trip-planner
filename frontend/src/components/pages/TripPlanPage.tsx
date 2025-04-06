@@ -24,6 +24,7 @@ import { useRef } from "react";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import LoadingOverlay from "../common/LoadingOverlay";
+import { Start } from "@mui/icons-material";
 
 interface LocationData {
   label: string;
@@ -336,7 +337,7 @@ const TripPlanPage = () => {
           display={"flex"}
           flexDirection={{ xs: "column", sm: "row" }}
           justifyContent={"space-between"}
-          alignItems={"center"}
+          alignItems={{ xs: "center", sm: "flex-start" }}
           width={"100%"}
         >
           <Typography
@@ -346,10 +347,11 @@ const TripPlanPage = () => {
           >
             TRIP SUMMARY
           </Typography>
+
           {trip && (
             <Button
               variant="contained"
-              size="medium"
+              size="large"
               color="secondary"
               startIcon={<LibraryBooksIcon />}
               sx={{
@@ -361,6 +363,48 @@ const TripPlanPage = () => {
             </Button>
           )}
         </Box>
+        {!trip && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.0, duration: 0.5 }}
+            style={{
+              width: "auto",
+              minHeight: "180px",
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "flex-start",
+              justifyContent: "flex-start",
+              textAlign: "left",
+              padding: "0",
+              color: theme.palette.text.secondary,
+            }}
+          >
+            <CalendarMonthIcon
+              sx={{
+                fontSize: 64,
+                color: theme.palette.grey[400],
+                mr: 2,
+              }}
+            />
+            <Box
+              alignContent="start"
+              display="flex"
+              flexDirection="column"
+              justifyContent="start"
+              alignItems="start"
+              gap={1}
+            >
+              <Typography variant="h6" gutterBottom>
+                No Trip Planned Yet
+              </Typography>
+              <Typography variant="body2">
+                Use the controls on the left to enter your trip details, then
+                click <strong>Plan Trip</strong> to get started.
+              </Typography>
+            </Box>
+          </motion.div>
+        )}
         {trip && trip.legs?.length > 0 && (
           <motion.div
             initial={{ opacity: 0 }}

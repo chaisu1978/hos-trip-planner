@@ -62,7 +62,7 @@ const ScrollZoomHint = () => {
             borderRadius: 8,
             fontSize: "0.8rem",
             pointerEvents: "none",
-            zIndex: 9999,
+            zIndex: 1100,
           }}
         >
           <Typography variant="caption">
