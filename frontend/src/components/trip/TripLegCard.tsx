@@ -10,9 +10,11 @@ import { PaletteColor } from "@mui/material";
 export default function TripLegCard({
   leg,
   onClick,
+  selected = false,
 }: {
   leg: TripLeg;
   onClick?: () => void;
+  selected?: boolean;
 }) {
   const theme = useTheme();
 
@@ -39,19 +41,33 @@ export default function TripLegCard({
   const color = (theme.palette[paletteKey] as PaletteColor).main;
 
   return (
-    <motion.div whileHover={{ scale: 1.02 }} style={{ width: "100%" }}>
+    <motion.div
+      whileHover={{ scale: 1.05 }}
+      animate={{
+        scale: selected ? 1.05 : 1,
+        backgroundColor: selected
+          ? theme.palette.action.selected
+          : "transparent",
+      }}
+      transition={{ duration: 0.3 }}
+      style={{ width: "100%", borderRadius: "16px" }}
+    >
       <ButtonBase onClick={onClick} sx={{ width: "100%", textAlign: "left" }}>
         <Box
-          boxShadow={1}
+          boxShadow={selected ? 3 : 1}
           padding={1.5}
-          bgcolor="background.paper"
+          bgcolor={selected ? "highlight.main" : "background.paper"}
+          color={selected ? "highlight.contrastText" : "text.primary"}
           minHeight={"108px"}
-          minWidth={"250px"}
+          minWidth={"200px"}
           sx={{
             width: "100%",
             borderLeft: "4px solid",
-            borderColor: (theme) => theme.palette.secondary.main,
+            borderColor: selected
+              ? theme.palette.primary.main
+              : theme.palette.secondary.main,
             borderRadius: "0 16px 0 16px",
+            transition: "border-color 0.5s ease",
           }}
         >
           {/* Top-level layout: left = content, right = chips */}
@@ -67,24 +83,25 @@ export default function TripLegCard({
                   justifyContent="center"
                   borderRadius="50%"
                   bgcolor={color}
-                  color="#fff"
+                  color="highlight.contrastText"
                 >
                   {icon}
                 </Box>
-                <Typography variant="body1" fontWeight={500}>
+                <Typography
+                  variant="body1"
+                  fontWeight={500}
+                  color={selected ? "highlight.contrastText" : "text.primary"}
+                >
                   {leg.leg_type.toUpperCase()}
                 </Typography>
               </Box>
 
-              <Typography fontSize="0.9rem" color="text.secondary">
+              <Typography
+                fontSize="0.9rem"
+                color={selected ? "highlight.contrastText" : "text.primary"}
+              >
                 {leg.start_label}
               </Typography>
-
-              {leg.notes && (
-                <Typography fontSize="0.75rem" color="text.secondary">
-                  {leg.notes}
-                </Typography>
-              )}
             </Box>
 
             {/* Right column: stacked chips */}
@@ -99,13 +116,24 @@ export default function TripLegCard({
               <Chip
                 label={`${Number(leg.duration_hours ?? 0).toFixed(2)} hrs`}
                 size="small"
+                sx={{
+                  color: selected ? "highlight.contrastText" : "text.primary",
+                }}
               />
               <Chip
                 label={`${Number(leg.distance_miles ?? 0).toFixed(1)} mi`}
                 size="small"
+                sx={{
+                  color: selected ? "highlight.contrastText" : "text.primary",
+                }}
               />
             </Box>
           </Box>
+          {leg.notes && (
+            <Typography fontSize="0.75rem" color="text.secondary">
+              {leg.notes}
+            </Typography>
+          )}
         </Box>
       </ButtonBase>
     </motion.div>

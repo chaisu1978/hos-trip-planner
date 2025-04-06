@@ -24,6 +24,7 @@ import { useRef } from "react";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import LoadingOverlay from "../common/LoadingOverlay";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
 
 interface LocationData {
   label: string;
@@ -129,7 +130,7 @@ const TripPlanPage = () => {
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const scrollByAmount = 250;
+  const scrollByAmount = 200;
 
   const scrollLeft = () => {
     if (scrollRef.current) {
@@ -271,6 +272,7 @@ const TripPlanPage = () => {
             <Button
               variant="contained"
               size="large"
+              startIcon={<RestartAltIcon />}
               color="primary"
               onClick={handleResetTrip}
               fullWidth
@@ -464,6 +466,7 @@ const TripPlanPage = () => {
                   >
                     <TripLegCard
                       leg={leg}
+                      selected={selectedLegId === leg.id}
                       onClick={() => handleLegCardClick(leg)}
                     />
                   </motion.div>

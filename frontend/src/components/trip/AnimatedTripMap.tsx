@@ -280,7 +280,7 @@ export default function AnimatedTripMap({
                   p={1}
                   sx={{
                     borderLeft: `4px solid ${theme.palette[colorKey].main}`,
-                    minWidth: "200px",
+                    minWidth: "150px",
                   }}
                 >
                   <Box display="flex" alignItems="center" gap={1} mb={1}>
