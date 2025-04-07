@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from collections import Counter
+from django.conf import settings
 
 SVG_PATH = Path(__file__).resolve().parent.parent / "assets" / "driver-log-book-hostp.svg"
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "assets"
@@ -13,7 +14,7 @@ def midpoint_between(status, y_map):
     # Special case: 'on_duty' is the last row, add slight offset for midpoint feel
     return y_map[status] + 10
 
-def inject_duty_periods_into_svg(logs, svg_input=SVG_PATH, output_dir=OUTPUT_DIR):
+def inject_duty_periods_into_svg(logs, trip_id, svg_input=SVG_PATH, output_dir=settings.MEDIA_ROOT):
     ns = {'svg': 'http://www.w3.org/2000/svg'}
     ET.register_namespace('', ns['svg'])
 
@@ -173,6 +174,7 @@ def inject_duty_periods_into_svg(logs, svg_input=SVG_PATH, output_dir=OUTPUT_DIR
             previous_y = current_y
 
 
-        out_file = output_dir / f"output-{date}.svg"
+        out_file = output_dir / str(trip_id) / "logs" / f"output-{date}.svg"
+        out_file.parent.mkdir(parents=True, exist_ok=True)
         tree.write(out_file, encoding="utf-8", xml_declaration=True)
         print(f"✅ Saved SVG for {date} → {out_file}")

@@ -16,7 +16,10 @@ from drf_spectacular.utils import OpenApiParameter
 import requests
 from .utils.cache_keys import make_cache_key
 from .serializers import GeocodeResultSerializer
-from .serializers import GeocodeReverseResultSerializer
+from .serializers import GeocodeReverseResultSerializer, SvgLogListSerializer, GenericDetailMessageSerializer
+from .services.svg_log_sheet import inject_duty_periods_into_svg
+from django.conf import settings
+from pathlib import Path
 
 class TripViewSet(viewsets.ModelViewSet):
     serializer_class = TripSerializer
@@ -36,16 +39,48 @@ class TripViewSet(viewsets.ModelViewSet):
         plan_trip(trip)
 
     @extend_schema(
+    request=None,
     responses={200: DailyLogSheetSerializer(many=True)},
     description="Returns FMCSA-style daily logs for a specific trip"
     )
 
-    @action(detail=True, methods=["get"])
-    def logs(self, request, pk=None):
+    @extend_schema(
+        responses={200: GenericDetailMessageSerializer},
+        description="Generates SVG log files for a specific trip"
+    )
+    @action(detail=True, methods=["post"])
+    def generate_svgs(self, request, pk=None):
         trip = self.get_object()
         logs = generate_daily_logs(trip)
-        serializer = DailyLogSheetSerializer(logs, many=True)
-        return Response(serializer.data)
+        inject_duty_periods_into_svg(logs, trip.id)
+        return Response({"detail": f"SVGs generated for trip {trip.id}"})
+
+    @extend_schema(
+        responses={200: SvgLogListSerializer},
+        description="Returns URLs to all generated daily log SVGs for this trip"
+    )
+    @action(detail=True, methods=["get"])
+    def svg_logs(self, request, pk=None):
+        trip = self.get_object()
+        trip_dir = Path(settings.MEDIA_ROOT) / str(trip.id) / "logs"
+
+        if not trip_dir.exists():
+            return Response({
+                "count": 0,
+                "svg_urls": []
+            })
+
+        svg_files = sorted(trip_dir.glob("output-*.svg"))
+        svg_urls = [
+            request.build_absolute_uri(
+                f"{settings.MEDIA_URL}{trip.id}/logs/{svg_file.name}"
+            ) for svg_file in svg_files
+        ]
+
+        return Response({
+            "count": len(svg_urls),
+            "svg_urls": svg_urls
+        })
 
 
 class GeocodeSearchView(APIView):

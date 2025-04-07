@@ -79,3 +79,19 @@ class GeocodeReverseResultSerializer(serializers.Serializer):
     display_name = serializers.CharField()
     lat = serializers.CharField()
     lon = serializers.CharField()
+
+
+class GenericDetailMessageSerializer(serializers.Serializer):
+    detail = serializers.CharField(
+        help_text="Operation completed"
+    )
+
+
+class SvgLogListSerializer(serializers.Serializer):
+    count = serializers.IntegerField(
+        help_text="Total number of SVG log files available."
+    )
+    svg_urls = serializers.ListField(
+        child=serializers.URLField(),
+        help_text="List of URLs pointing to the generated daily log SVG files."
+    )
