@@ -5,29 +5,74 @@ from collections import Counter
 SVG_PATH = Path(__file__).resolve().parent.parent / "assets" / "driver-log-book-hostp.svg"
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "assets"
 
+def midpoint_between(status, y_map):
+    order = ["off_duty", "sleeper_berth", "driving", "on_duty"]
+    idx = order.index(status)
+    if idx + 1 < len(order):
+        return (y_map[status] + y_map[order[idx + 1]]) / 2
+    # Special case: 'on_duty' is the last row, add slight offset for midpoint feel
+    return y_map[status] + 10
+
 def inject_duty_periods_into_svg(logs, svg_input=SVG_PATH, output_dir=OUTPUT_DIR):
     ns = {'svg': 'http://www.w3.org/2000/svg'}
     ET.register_namespace('', ns['svg'])
 
-    def get_hour_positions(root):
-        hour_x = {}
+    def get_x_position_for_time(root):
+        """
+        Returns a function that maps any HH:MM time string to an interpolated x-position.
+        """
+        raw_map = {}
+        time_points = []
+
         for hour in range(24):
-            label = f"{hour % 12 or 12}{'am' if hour < 12 else 'pm'}_line"
-            elem = root.find(f".//svg:line[@id='_{label}']", ns)
-            if elem is not None:
-                hour_x[hour] = float(elem.attrib.get("x1", "0"))
-            elif hour == 0:
-                m = root.find(".//svg:line[@id='midnight_line']", ns)
-                if m is not None:
-                    hour_x[0] = float(m.attrib.get("x1", "0"))
-            elif hour == 12:
-                n = root.find(".//svg:line[@id='noon_line']", ns)
-                if n is not None:
-                    hour_x[12] = float(n.attrib.get("x1", "0"))
-        end_line = root.find(".//svg:line[@id='timeline_end_line']", ns)
-        if end_line is not None:
-            hour_x[23] = float(end_line.attrib.get("x1", "0"))
-        return hour_x
+            hour_12 = hour % 12 or 12
+            suffix = "am" if hour < 12 else "pm"
+            for minute in [0, 15, 30, 45]:
+                label = f"_{hour_12}{minute:02d}{suffix}_line"
+                t_str = f"{hour:02d}:{minute:02d}"
+                el = root.find(f".//svg:line[@id='{label}']", ns)
+                if el is not None:
+                    x = float(el.attrib.get("x1", "0"))
+                    raw_map[t_str] = x
+                    time_points.append((t_str, x))
+
+        # Add 00:00 and 24:00 if present
+        midnight_start = root.find(".//svg:line[@id='_1200am_line_start']", ns)
+        if midnight_start is not None:
+            raw_map["00:00"] = float(midnight_start.attrib.get("x1", "0"))
+            time_points.append(("00:00", raw_map["00:00"]))
+
+        midnight_end = root.find(".//svg:line[@id='_1200am_line_end']", ns)
+        if midnight_end is not None:
+            raw_map["24:00"] = float(midnight_end.attrib.get("x1", "0"))
+            time_points.append(("24:00", raw_map["24:00"]))
+
+        # Convert keys to minutes since midnight for easier math
+        time_points.sort(key=lambda x: int(x[0][:2]) * 60 + int(x[0][3:]))
+
+        def get_x(hhmm):
+            h, m = map(int, hhmm.split(":"))
+            target = h * 60 + m
+
+            # Exact match
+            if hhmm in raw_map:
+                return raw_map[hhmm]
+
+            # Find two closest time points
+            for i in range(len(time_points) - 1):
+                t1_str, x1 = time_points[i]
+                t2_str, x2 = time_points[i + 1]
+                t1_min = int(t1_str[:2]) * 60 + int(t1_str[3:])
+                t2_min = int(t2_str[:2]) * 60 + int(t2_str[3:])
+
+                if t1_min <= target <= t2_min:
+                    ratio = (target - t1_min) / (t2_min - t1_min)
+                    return x1 + (x2 - x1) * ratio
+
+            return None  # fallback if totally outside range
+
+        return get_x
+
 
     def get_y_positions(root):
         y_map = {}
@@ -50,90 +95,83 @@ def inject_duty_periods_into_svg(logs, svg_input=SVG_PATH, output_dir=OUTPUT_DIR
         date = log["date"]
         print(f"\n🗓️ Injecting log for {date}...")
 
-        # Tally up status durations
-        status_durations = Counter()
-        for duty in log["duty_periods"]:
-            start_h, start_m = map(int, duty["start"].split(":"))
-            end_h, end_m = map(int, duty["end"].split(":"))
-            start_min = start_h * 60 + start_m
-            end_min = end_h * 60 + end_m
-            duration = max(0, end_min - start_min)
-            status_durations[duty["status"]] += duration
-
-        # Convert to hours rounded to 2 decimals
-        def to_hours(minutes):
-            return round(minutes / 60.0, 2)
-
-        off_duty_total = to_hours(status_durations["off_duty"])
-        sleeper_berth_total = to_hours(status_durations["sleeper_berth"])
-        driving_total = to_hours(status_durations["driving"])
-        on_duty_total = to_hours(status_durations["on_duty"])
-        summed_total = round(off_duty_total + sleeper_berth_total + driving_total + on_duty_total, 2)
-
         tree = ET.parse(svg_input)
         root = tree.getroot()
-        hour_x = get_hour_positions(root)
+        get_x_for_time = get_x_position_for_time(root)
         y_map = get_y_positions(root)
 
-        # Inject fixed-position text (manual coordinates)
+        # Inject fixed-position text
         inject_text(root, 205.04, 73, log.get("month", ""))
         inject_text(root, 256, 73, log.get("day", ""))
         inject_text(root, 301.04, 73, log.get("year", ""))
-        inject_text(root, 122, 101, log.get("from_location", ""))
-        inject_text(root, 318, 101, log.get("to_location", ""))
+        # inject_text(root, 122, 101, log.get("from_location", ""))
+        # inject_text(root, 318, 101, log.get("to_location", ""))
 
         inject_text(root, 95, 137, f"{log.get('total_miles', 0)}")
         inject_text(root, 188, 137, f"{log.get('total_miles', 0)}")
-        inject_text(root, 524, 270, off_duty_total)
-        inject_text(root, 524, 289, sleeper_berth_total)
-        inject_text(root, 524, 307, driving_total)
-        inject_text(root, 524, 325, on_duty_total)
-        inject_text(root, 524, 381, summed_total)
 
-        for duty in log["duty_periods"]:
-            start_hr, start_min = map(int, duty["start"].split(":"))
-            end_hr, end_min = map(int, duty["end"].split(":"))
+        inject_text(root, 524, 270, log.get("off_duty_total", 0))
+        inject_text(root, 524, 289, log.get("sleeper_berth_total", 0))
+        inject_text(root, 524, 307, log.get("driving_total", 0))
+        inject_text(root, 524, 325, log.get("on_duty_total", 0))
+        inject_text(root, 524, 381, log.get("total_hours", 0))
 
-            # Interpolate x1
-            if start_hr in hour_x and (start_hr + 1) in hour_x:
-                x1 = hour_x[start_hr] + (hour_x[start_hr + 1] - hour_x[start_hr]) * (start_min / 60)
-            else:
-                x1 = hour_x.get(start_hr, 0)
+        # Draw connected duty lines
+        previous_x = None
+        previous_y = None
 
-            # Interpolate x2 with edge case handling for midnight or 23:59+
-            if end_hr == 23:
-                x2 = hour_x.get(23, hour_x.get(22, 0) + 20)
-            elif end_hr in hour_x and (end_hr + 1) in hour_x:
-                x2 = hour_x[end_hr] + (hour_x[end_hr + 1] - hour_x[end_hr]) * (end_min / 60)
-            else:
-                # If end_hr == 0 (midnight), try fallback to hour_x[0] directly
-                x2 = hour_x.get(end_hr, x1)
+        for i, duty in enumerate(log["duty_periods"]):
+            start_time = duty["start"]
+            end_time = duty["end"]
+            status = duty["status"]
 
-            status_map = {
-                "pickup": "on_duty",
-                "dropoff": "on_duty",
-                "fuel": "on_duty",
-                "break": "off_duty",
-                "rest": "sleeper_berth",
-                "drive": "driving",
-                "driving": "driving",
-                "on_duty": "on_duty",
-                "off_duty": "off_duty",
-                "sleeper_berth": "sleeper_berth"
-            }
-            mapped_status = status_map.get(duty["status"])
-            y = y_map.get(mapped_status)
+            x1 = get_x_for_time(start_time)
+            x2 = get_x_for_time(end_time)
+            current_y = midpoint_between(status, y_map)
 
-            print(f"  ⏱️ {duty['status']} from {duty['start']} to {duty['end']} → x1: {x1}, x2: {x2}, y: {y}")
-            if x1 is not None and x2 is not None and y is not None:
-                ET.SubElement(root, "rect", {
-                    "x": str(x1),
-                    "y": str(y),
-                    "width": str(x2 - x1),
-                    "height": "10",
-                    "fill": "red",
-                    "opacity": "0.7"
+            if x1 is None or x2 is None or current_y is None:
+                print(f"⚠️ Missing position for {start_time}–{end_time} or status '{status}'")
+                continue
+
+            # (a) Draw vertical transition from previous status (if needed)
+            if previous_x is not None and previous_y is not None and previous_x != x1:
+                ET.SubElement(root, "line", {
+                    "x1": str(round(x1, 2)),
+                    "y1": str(round(previous_y, 2)),
+                    "x2": str(round(x1, 2)),
+                    "y2": str(round(current_y, 2)),
+                    "stroke": "black",
+                    "stroke-width": "2"
                 })
+
+            # (b) Draw horizontal line for current duty period
+            ET.SubElement(root, "line", {
+                "x1": str(round(x1, 2)),
+                "y1": str(round(current_y, 2)),
+                "x2": str(round(x2, 2)),
+                "y2": str(round(current_y, 2)),
+                "stroke": "black",
+                "stroke-width": "2"
+            })
+
+            # (c) Draw vertical transition to next status (if different)
+            next_duty = log["duty_periods"][i + 1] if i + 1 < len(log["duty_periods"]) else None
+            if next_duty:
+                next_status = next_duty["status"]
+                next_y = midpoint_between(next_status, y_map)
+                if next_status != status and next_y is not None:
+                    ET.SubElement(root, "line", {
+                        "x1": str(round(x2, 2)),
+                        "y1": str(round(current_y, 2)),
+                        "x2": str(round(x2, 2)),
+                        "y2": str(round(next_y, 2)),
+                        "stroke": "black",
+                        "stroke-width": "2"
+                    })
+
+            previous_x = x2
+            previous_y = current_y
+
 
         out_file = output_dir / f"output-{date}.svg"
         tree.write(out_file, encoding="utf-8", xml_declaration=True)

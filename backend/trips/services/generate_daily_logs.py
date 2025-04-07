@@ -10,7 +10,10 @@ STATUS_PRIORITY = {
     "on_duty": 4,
 }
 
+
 def get_leg_type(leg):
+    if "34-hour" in leg.notes.lower():
+        return "cycle"
     if leg.is_rest_stop:
         return "rest"
     if leg.is_fuel_stop:
@@ -23,7 +26,7 @@ def get_leg_type(leg):
         return "dropoff"
     if leg.distance_miles > 0:
         return "drive"
-    return "other"
+    return "rest"
 
 def map_status(status):
     return {
@@ -32,6 +35,7 @@ def map_status(status):
         "fuel": "on_duty",
         "break": "off_duty",
         "rest": "sleeper_berth",
+        "cycle": "off_duty",
         "drive": "driving"
     }.get(status, "off_duty")
 

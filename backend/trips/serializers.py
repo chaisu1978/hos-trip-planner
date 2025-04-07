@@ -23,7 +23,7 @@ class TripLegSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ["trip"]
 
-    @extend_schema_field(serializers.CharField())  # 👈 Add this line
+    @extend_schema_field(serializers.CharField())
     def get_leg_type(self, obj) -> str:
         if obj.is_rest_stop:
             return "rest"

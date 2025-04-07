@@ -26,7 +26,9 @@ class TripViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if self.request.user and self.request.user.is_authenticated:
             return Trip.objects.filter(user=self.request.user).order_by("-planned_at")
-        return Trip.objects.none()
+        else:
+            # Return trips with user=None (anonymous)
+            return Trip.objects.filter(user=None).order_by("-planned_at")
 
     def perform_create(self, serializer):
         user = self.request.user if self.request.user and self.request.user.is_authenticated else None
