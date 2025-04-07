@@ -25,6 +25,7 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import LoadingOverlay from "../common/LoadingOverlay";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import SvgLogbookModal from "../logs/SvgLogbookModal";
 
 interface LocationData {
   label: string;
@@ -52,6 +53,9 @@ const TripPlanPage = () => {
   const [selectedLegId, setSelectedLegId] = useState<number | null>(null);
   const { showSnackbar } = useSnackbar();
   const theme = useTheme();
+  const [logSvgUrls, setLogSvgUrls] = useState<string[]>([]);
+  const [logModalOpen, setLogModalOpen] = useState(false);
+  const [logsLoading, setLogsLoading] = useState(false);
 
   const tripPlanned = !!trip;
 
@@ -183,6 +187,30 @@ const TripPlanPage = () => {
     Object.values(markerRefs.current).forEach((marker) => {
       if (marker?.closePopup) marker.closePopup();
     });
+  };
+
+  const handleShowLogs = async () => {
+    if (!trip?.id) return;
+
+    try {
+      setLogsLoading(true);
+      // First, trigger SVG generation
+      await apiClient.post(`/trips/trips/${trip.id}/generate_svgs/`);
+
+      // Then, fetch the SVG URLs
+      const svgResponse = await apiClient.get(
+        `/trips/trips/${trip.id}/svg_logs/`
+      );
+      const urls = svgResponse.data.svg_urls || [];
+
+      setLogSvgUrls(urls);
+      setLogModalOpen(true);
+    } catch (error) {
+      console.error("Failed to load logs", error);
+      showSnackbar("Unable to generate logs. Please try again.", "error");
+    } finally {
+      setLogsLoading(false);
+    }
   };
 
   return (
@@ -362,13 +390,18 @@ const TripPlanPage = () => {
               variant="contained"
               size="large"
               color="secondary"
-              startIcon={<LibraryBooksIcon />}
-              sx={{
-                borderRadius: "24px",
-                padding: "8px 24px",
-              }}
+              startIcon={
+                logsLoading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  <LibraryBooksIcon />
+                )
+              }
+              sx={{ borderRadius: "24px", padding: "8px 24px" }}
+              onClick={handleShowLogs}
+              disabled={logsLoading}
             >
-              DAILY LOGS
+              {logsLoading ? "GETTING LOGS" : "DAILY LOGS"}
             </Button>
           )}
         </Box>
@@ -499,6 +532,12 @@ const TripPlanPage = () => {
               ? (pickupLocation ?? undefined)
               : (dropoffLocation ?? undefined)
         }
+      />
+      <SvgLogbookModal
+        open={logModalOpen}
+        onClose={() => setLogModalOpen(false)}
+        svgUrls={logSvgUrls}
+        tripId={trip?.id}
       />
     </Box>
   );

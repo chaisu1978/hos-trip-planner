@@ -14,7 +14,7 @@ def midpoint_between(status, y_map):
     # Special case: 'on_duty' is the last row, add slight offset for midpoint feel
     return y_map[status] + 10
 
-def inject_duty_periods_into_svg(logs, trip_id, svg_input=SVG_PATH, output_dir=settings.MEDIA_ROOT):
+def inject_duty_periods_into_svg(logs, trip_id, svg_input=SVG_PATH, output_dir=Path(settings.MEDIA_ROOT)):
     ns = {'svg': 'http://www.w3.org/2000/svg'}
     ET.register_namespace('', ns['svg'])
 
