@@ -130,7 +130,10 @@ export default function TripLegCard({
             </Box>
           </Box>
           {leg.notes && (
-            <Typography fontSize="0.75rem" color="text.secondary">
+            <Typography
+              fontSize="0.75rem"
+              color={selected ? "highlight.contrastText" : "text.primary"}
+            >
               {leg.notes}
             </Typography>
           )}

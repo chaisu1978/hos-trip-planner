@@ -58,6 +58,20 @@ const TripPlanPage = () => {
   const [logsLoading, setLogsLoading] = useState(false);
 
   const tripPlanned = !!trip;
+  const totalMiles = trip?.legs?.reduce(
+    (sum: number, leg: TripLeg) => sum + Number(leg.distance_miles ?? 0),
+    0
+  );
+
+  const totalHoursRaw = trip?.legs?.reduce(
+    (sum: number, leg: TripLeg) => sum + Number(leg.duration_hours ?? 0),
+    0
+  );
+
+  const totalHours = Number.isFinite(totalHoursRaw) ? totalHoursRaw : 0;
+  const hours = Math.floor(totalHours);
+  const minutes = Math.round((totalHours - hours) * 60);
+  const formattedDuration = `${hours} hrs ${minutes} min`;
 
   const handleOpenDrawer = (type: "current" | "pickup" | "dropoff") => {
     setDrawerType(type);
@@ -374,7 +388,7 @@ const TripPlanPage = () => {
           display={"flex"}
           flexDirection={{ xs: "column", sm: "row" }}
           justifyContent={"space-between"}
-          alignItems={{ xs: "center", sm: "flex-start" }}
+          alignItems={{ xs: "center", sm: "baseline" }}
           width={"100%"}
         >
           <Typography
@@ -384,25 +398,48 @@ const TripPlanPage = () => {
           >
             TRIP SUMMARY
           </Typography>
+          {trip?.legs?.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+              style={{ display: "flex", gap: "8px" }}
+            >
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                fontWeight={600}
+              >
+                {`${Number.isFinite(totalMiles) ? totalMiles.toFixed(0) : "0"} miles, ${formattedDuration}`}
+              </Typography>
+            </motion.div>
+          )}
 
           {trip && (
-            <Button
-              variant="contained"
-              size="large"
-              color="secondary"
-              startIcon={
-                logsLoading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  <LibraryBooksIcon />
-                )
-              }
-              sx={{ borderRadius: "24px", padding: "8px 24px" }}
-              onClick={handleShowLogs}
-              disabled={logsLoading}
+            <motion.div
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+              style={{ display: "flex", gap: "8px" }}
             >
-              {logsLoading ? "GETTING LOGS" : "DAILY LOGS"}
-            </Button>
+              <Button
+                variant="contained"
+                size="large"
+                color="secondary"
+                startIcon={
+                  logsLoading ? (
+                    <CircularProgress size={24} color="inherit" />
+                  ) : (
+                    <LibraryBooksIcon />
+                  )
+                }
+                sx={{ borderRadius: "24px", padding: "8px 24px" }}
+                onClick={handleShowLogs}
+                disabled={logsLoading}
+              >
+                {logsLoading ? "GETTING LOGS" : "DAILY LOGS"}
+              </Button>
+            </motion.div>
           )}
         </Box>
         {!trip && (

@@ -2,13 +2,17 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  DialogActions,
   IconButton,
   Box,
   Button,
+  useTheme,
+  CircularProgress,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import apiClient from "../../services/auth";
+import { useState } from "react";
 
 interface SvgLogbookModalProps {
   open: boolean;
@@ -23,8 +27,11 @@ const SvgLogbookModal = ({
   svgUrls,
   tripId,
 }: SvgLogbookModalProps) => {
+  const theme = useTheme();
+  const [downloading, setDownloading] = useState(false);
   const handleDownloadPdf = async () => {
     try {
+      setDownloading(true);
       const response = await apiClient.get(
         `/trips/trips/${tripId}/download_logs/`,
         {
@@ -43,6 +50,8 @@ const SvgLogbookModal = ({
       link.remove();
     } catch (error) {
       console.error("Failed to download logs PDF", error);
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -59,8 +68,8 @@ const SvgLogbookModal = ({
           <CloseIcon />
         </IconButton>
       </DialogTitle>
-      <DialogContent>
-        {/* Render carousel or stacked preview of SVGs */}
+
+      <DialogContent dividers>
         <Box display="flex" flexDirection="column" gap={2}>
           {svgUrls.map((url, index) => (
             <img
@@ -71,17 +80,43 @@ const SvgLogbookModal = ({
             />
           ))}
         </Box>
-        <Box mt={4} display="flex" justifyContent="center">
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<PictureAsPdfIcon />}
-            onClick={handleDownloadPdf}
-          >
-            Download All as PDF
-          </Button>
-        </Box>
       </DialogContent>
+
+      {/* Sticky footer */}
+      <DialogActions
+        sx={{
+          position: "sticky",
+          bottom: 0,
+          background: theme.palette.background.paper,
+          borderTop: `1px solid ${theme.palette.divider}`,
+          justifyContent: "center",
+          padding: "12px 24px",
+        }}
+      >
+        <Button
+          color="error"
+          variant="contained"
+          onClick={onClose}
+          startIcon={<CloseIcon />}
+        >
+          Close
+        </Button>
+        <Button
+          variant="contained"
+          color="secondary"
+          startIcon={
+            downloading ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              <PictureAsPdfIcon />
+            )
+          }
+          onClick={handleDownloadPdf}
+          disabled={downloading}
+        >
+          {downloading ? "Preparing..." : "Download All"}
+        </Button>
+      </DialogActions>
     </Dialog>
   );
 };
