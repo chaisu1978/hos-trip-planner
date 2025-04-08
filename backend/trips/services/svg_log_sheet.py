@@ -1,6 +1,5 @@
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from collections import Counter
 from django.conf import settings
 
 SVG_PATH = Path(__file__).resolve().parent.parent / "assets" / "driver-log-book-hostp.svg"
@@ -14,9 +13,144 @@ def midpoint_between(status, y_map):
     # Special case: 'on_duty' is the last row, add slight offset for midpoint feel
     return y_map[status] + 10
 
+
+def compute_totals_from_periods(duty_periods):
+    """
+    Given a list of duty_periods with 'start', 'end', and 'status',
+    compute the total hours spent in each status.
+    Returns a dict, e.g. {
+      "off_duty": 8.0,
+      "sleeper_berth": 0.0,
+      "driving": 4.5,
+      "on_duty": 1.5
+    }
+    """
+    totals = {
+        "off_duty": 0.0,
+        "sleeper_berth": 0.0,
+        "driving": 0.0,
+        "on_duty": 0.0
+    }
+
+    def hhmm_to_minutes(t):
+        h, m = map(int, t.split(":"))
+        return h * 60 + m
+
+    for period in duty_periods:
+        start = hhmm_to_minutes(period["start"])
+        end   = hhmm_to_minutes(period["end"])
+        duration_minutes = end - start
+        duration_hours   = duration_minutes / 60.0
+
+        status = period["status"]
+        if status in totals:
+            totals[status] += duration_hours
+        else:
+            # Just in case there's some other status unexpectedly
+            pass
+
+    return totals
+
+
 def inject_duty_periods_into_svg(logs, trip_id, svg_input=SVG_PATH, output_dir=Path(settings.MEDIA_ROOT)):
     ns = {'svg': 'http://www.w3.org/2000/svg'}
     ET.register_namespace('', ns['svg'])
+
+    ##########################################################################
+    # 1. HELPER FUNCTIONS for rounding times to nearest 15 min and adding off-duty
+    ##########################################################################
+
+    def hhmm_to_minutes(hhmm: str) -> int:
+        """Convert 'HH:MM' to integer minutes from midnight."""
+        h, m = map(int, hhmm.split(":"))
+        return h * 60 + m
+
+    def minutes_to_hhmm(m: int) -> str:
+        """Convert integer minutes from midnight back to 'HH:MM' (24h format)."""
+        hh = m // 60
+        mm = m % 60
+        # If you prefer '24:00' for midnight's end, handle that case if hh == 24.
+        return f"{hh:02d}:{mm:02d}"
+
+    def round_to_quarter_hour(m: int) -> int:
+        """
+        Round integer minutes from midnight to nearest 15-min increment.
+        This example: <8 min => round down, ≥8 => round up.
+        """
+        quarter = 15
+        remainder = m % quarter
+        if remainder < 8:
+            return m - remainder
+        else:
+            return m + (quarter - remainder)
+
+    def add_pre_post_off_duty_periods(duty_periods):
+        """
+        Ensure each day is fully covered from 00:00 to 24:00 by adding off_duty
+        if needed before the first duty period and after the last duty period.
+        """
+        # Sort by start time
+        duty_periods.sort(key=lambda d: hhmm_to_minutes(d["start"]))
+        if not duty_periods:
+            # If no periods, define the entire day as off-duty
+            return [{"start": "00:00", "end": "24:00", "status": "off_duty"}]
+
+        # 1) Add off-duty before the first period, if needed
+        first_start = hhmm_to_minutes(duty_periods[0]["start"])
+        if first_start > 0:
+            duty_periods.insert(0, {
+                "start": "00:00",
+                "end": minutes_to_hhmm(first_start),
+                "status": "off_duty",
+            })
+
+        # 2) Add off-duty after the last period, if needed
+        last_end = hhmm_to_minutes(duty_periods[-1]["end"])
+        if last_end < 24 * 60:  # 24:00 = 1440 minutes
+            duty_periods.append({
+                "start": minutes_to_hhmm(last_end),
+                "end": "24:00",
+                "status": "off_duty",
+            })
+
+        # Optional: merge adjacent off_duty if you prefer a cleaner final list
+        # e.g., if the first period was off_duty and the second period is also off_duty
+        merged = []
+        for period in duty_periods:
+            if not merged:
+                merged.append(period)
+            else:
+                prev = merged[-1]
+                if prev["status"] == period["status"] == "off_duty":
+                    # Extend the previous period's end
+                    prev["end"] = period["end"]
+                else:
+                    merged.append(period)
+        return merged
+
+    def round_duty_periods_to_quarter_hours(duty_periods):
+        """
+        For each period, round start/end to the nearest 15-min block
+        before injecting them into the SVG.
+        """
+        for d in duty_periods:
+            start_m = hhmm_to_minutes(d["start"])
+            end_m = hhmm_to_minutes(d["end"])
+            d["start"] = minutes_to_hhmm(round_to_quarter_hour(start_m))
+            d["end"]   = minutes_to_hhmm(round_to_quarter_hour(end_m))
+        return duty_periods
+
+    def round_hours_to_quarter(decimal_value):
+        """Round a float hour total to nearest 0.25 increment."""
+        try:
+            val = float(decimal_value)
+        except:
+            val = 0.0
+        return round(val * 4) / 4.0
+
+    ##########################################################################
+    # 2. EXISTING HELPER FUNCTIONS (unchanged)
+    ##########################################################################
 
     def get_x_position_for_time(root):
         """
@@ -74,7 +208,6 @@ def inject_duty_periods_into_svg(logs, trip_id, svg_input=SVG_PATH, output_dir=P
 
         return get_x
 
-
     def get_y_positions(root):
         y_map = {}
         for status in ["off_duty", "sleeper_berth", "driving", "on_duty"]:
@@ -92,6 +225,10 @@ def inject_duty_periods_into_svg(logs, trip_id, svg_input=SVG_PATH, output_dir=P
                 "fill": "black"
             }).text = str(text)
 
+    ##########################################################################
+    # 3. MAIN LOOP (modified only to add rounding steps)
+    ##########################################################################
+
     for log in logs:
         date = log["date"]
         print(f"\n🗓️ Injecting log for {date}...")
@@ -101,14 +238,58 @@ def inject_duty_periods_into_svg(logs, trip_id, svg_input=SVG_PATH, output_dir=P
         get_x_for_time = get_x_position_for_time(root)
         y_map = get_y_positions(root)
 
-        # Inject fixed-position text
+        ######################################################################
+        # (a) Round each duty period and insert pre/post off-duty
+        ######################################################################
+        duty_periods = log.get("duty_periods", [])
+
+        # 1) Round the user-provided periods
+        duty_periods = round_duty_periods_to_quarter_hours(duty_periods)
+
+        # 2) Insert pre/post off-duty
+        duty_periods = add_pre_post_off_duty_periods(duty_periods)
+
+        # 3) (Optional) Round again in case you want the newly inserted segments also snapped
+        duty_periods = round_duty_periods_to_quarter_hours(duty_periods)
+
+        # now final
+        log["duty_periods"] = duty_periods
+
+        # Now compute new totals from the final, updated periods
+        new_totals = compute_totals_from_periods(duty_periods)
+
+        # Round each total to .25 increments if you like:
+        log["off_duty_total"]      = round_hours_to_quarter(new_totals["off_duty"])
+        log["sleeper_berth_total"] = round_hours_to_quarter(new_totals["sleeper_berth"])
+        log["driving_total"]       = round_hours_to_quarter(new_totals["driving"])
+        log["on_duty_total"]       = round_hours_to_quarter(new_totals["on_duty"])
+
+        # Then, if you want a 'total_hours' as the sum, do:
+        sum_all = (new_totals["off_duty"]
+                   + new_totals["sleeper_berth"]
+                   + new_totals["driving"]
+                   + new_totals["on_duty"])
+        log["total_hours"] = round_hours_to_quarter(sum_all)
+        log["duty_periods"] = duty_periods
+
+        ######################################################################
+        # (b) Round the daily hour totals to the nearest 0.25 increment
+        ######################################################################
+        # If your code sets these as numbers, they might be floats or strings:
+        log["off_duty_total"]       = round_hours_to_quarter(log.get("off_duty_total", 0))
+        log["sleeper_berth_total"]  = round_hours_to_quarter(log.get("sleeper_berth_total", 0))
+        log["driving_total"]        = round_hours_to_quarter(log.get("driving_total", 0))
+        log["on_duty_total"]        = round_hours_to_quarter(log.get("on_duty_total", 0))
+        log["total_hours"]          = round_hours_to_quarter(log.get("total_hours", 0))
+
+        ######################################################################
+        # (c) Inject fixed-position text (unchanged)
+        ######################################################################
         inject_text(root, 205.04, 73, log.get("month", ""))
         inject_text(root, 256, 73, log.get("day", ""))
         inject_text(root, 301.04, 73, log.get("year", ""))
-        # inject_text(root, 122, 101, log.get("from_location", ""))
-        # inject_text(root, 318, 101, log.get("to_location", ""))
 
-        inject_text(root, 95, 137, f"{log.get('total_miles', 0)}")
+        inject_text(root, 95, 137,  f"{log.get('total_miles', 0)}")
         inject_text(root, 188, 137, f"{log.get('total_miles', 0)}")
 
         inject_text(root, 524, 270, log.get("off_duty_total", 0))
@@ -117,7 +298,10 @@ def inject_duty_periods_into_svg(logs, trip_id, svg_input=SVG_PATH, output_dir=P
         inject_text(root, 524, 325, log.get("on_duty_total", 0))
         inject_text(root, 524, 381, log.get("total_hours", 0))
 
-        # Draw connected duty lines
+        ######################################################################
+        # (d) Draw connected duty lines (unchanged except for referencing
+        #     the updated log["duty_periods"])
+        ######################################################################
         previous_x = None
         previous_y = None
 
@@ -173,7 +357,9 @@ def inject_duty_periods_into_svg(logs, trip_id, svg_input=SVG_PATH, output_dir=P
             previous_x = x2
             previous_y = current_y
 
-
+        ######################################################################
+        # (e) Save out the SVG (unchanged)
+        ######################################################################
         out_file = output_dir / str(trip_id) / "logs" / f"output-{date}.svg"
         out_file.parent.mkdir(parents=True, exist_ok=True)
         tree.write(out_file, encoding="utf-8", xml_declaration=True)

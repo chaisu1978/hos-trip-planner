@@ -270,7 +270,10 @@ const LocationDrawer = ({
         >
           {confirming ? "Saving..." : "Confirm Location"}
         </Button>
-
+        <Typography variant="body2" align="center">
+          You can also drag and scroll on the map to place the marker on the
+          location.
+        </Typography>
         <Box position="relative" height="400px">
           <MapContainer
             center={center}
@@ -307,9 +310,6 @@ const LocationDrawer = ({
           </Box>
         </Box>
 
-        <Typography variant="body2" align="center">
-          Drag the map to place the pin on your desired location.
-        </Typography>
         {type === "current" && (
           <Button
             variant="contained"
