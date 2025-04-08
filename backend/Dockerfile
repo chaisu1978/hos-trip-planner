@@ -20,14 +20,19 @@ RUN apk add --update --no-cache \
     python3-dev \
     libffi-dev \
     postgresql-dev \
+    cairo-dev \
+    gdk-pixbuf \
+    pango-dev \
+    libxml2-dev \
+    libxslt-dev \
     build-base \
-    make && \
-    python -m venv /py && \
-    /py/bin/pip install --upgrade pip && \
-    /py/bin/pip install -r /tmp/requirements.txt && \
-    /py/bin/pip install -r /tmp/requirements.dev.txt && \
-    rm -rf /tmp
-
+    py3-cairocffi \
+    shared-mime-info \
+    && python -m venv /py \
+    && /py/bin/pip install --upgrade pip \
+    && /py/bin/pip install -r /tmp/requirements.txt \
+    && /py/bin/pip install -r /tmp/requirements.dev.txt \
+    && rm -rf /tmp
 
 # Add a non-root user and prepare directories
 RUN adduser \
@@ -54,5 +59,4 @@ EXPOSE 8000
 # Switch to the non-root user
 USER django-user
 
-# Argument to toggle development mode (keeping it here for potential future use)
 ARG DEV=false

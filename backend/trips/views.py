@@ -20,6 +20,10 @@ from .serializers import GeocodeReverseResultSerializer, SvgLogListSerializer, G
 from .services.svg_log_sheet import inject_duty_periods_into_svg
 from django.conf import settings
 from pathlib import Path
+from django.http import HttpResponse
+import cairosvg
+from io import BytesIO
+from PyPDF2 import PdfMerger
 
 class TripViewSet(viewsets.ModelViewSet):
     serializer_class = TripSerializer
@@ -81,6 +85,41 @@ class TripViewSet(viewsets.ModelViewSet):
             "count": len(svg_urls),
             "svg_urls": svg_urls
         })
+    
+    @extend_schema(
+        responses={200: "application/pdf"},
+        description="Download all SVG daily logs as a combined PDF"
+    )
+    @action(detail=True, methods=["get"])
+    def download_logs(self, request, pk=None):
+        trip = self.get_object()
+        trip_dir = Path(settings.MEDIA_ROOT) / str(trip.id) / "logs"
+        svg_files = sorted(trip_dir.glob("output-*.svg"))
+
+        if not svg_files:
+            return HttpResponse("No SVG logs found", status=404)
+
+        # Convert each SVG to a PDF in memory
+        pdf_streams = []
+        for svg_file in svg_files:
+            pdf_bytes = BytesIO()
+            cairosvg.svg2pdf(url=str(svg_file), write_to=pdf_bytes)
+            pdf_bytes.seek(0)
+            pdf_streams.append(pdf_bytes)
+
+        # Merge PDFs into one
+        merger = PdfMerger()
+        for pdf in pdf_streams:
+            merger.append(pdf)
+
+        output_pdf = BytesIO()
+        merger.write(output_pdf)
+        merger.close()
+        output_pdf.seek(0)
+
+        response = HttpResponse(output_pdf.read(), content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="DailyLogs-{trip.id}.pdf"'
+        return response
 
 
 class GeocodeSearchView(APIView):

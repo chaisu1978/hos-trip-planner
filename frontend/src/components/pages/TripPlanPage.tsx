@@ -25,7 +25,7 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import LoadingOverlay from "../common/LoadingOverlay";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
-import SvgLogbookModal from "../logs/SvgLogbookModal";
+import SvgLogbookModal from "../triplogs/SvgLogbookModal";
 
 interface LocationData {
   label: string;
