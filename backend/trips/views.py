@@ -128,35 +128,50 @@ class GeocodeSearchView(APIView):
 
     def get(self, request):
         query = request.query_params.get("q", "").strip()
-        if len(query) < 3:
+
+        # Normalize query for cache key
+        normalized_query = " ".join(query.lower().split())
+        if len(normalized_query) < 3:
             return Response([])
 
         user_ip = request.META.get("REMOTE_ADDR", "")
-        cache_key = make_cache_key("geocode", user_ip, query)
+        cache_key = make_cache_key("geocode", user_ip, normalized_query)
         if cache.get(cache_key):
-            return Response([])  # short-circuit repeat queries
+            return Response([])
 
-        # Store marker to prevent immediate repeat (10s)
+        # Cache the query to avoid hammering Nominatim
         cache.set(cache_key, True, timeout=10)
 
-        headers = {
-            "User-Agent": "HOS-Trip-Planner/1.0 (https://hostp.webworkstt.com)",
-        }
+        def nominatim_search(q):
+            headers = {
+                "User-Agent": "HOS-Trip-Planner/1.0 (https://hostp.webworkstt.com)",
+            }
+            return requests.get(
+                "https://nominatim.openstreetmap.org/search",
+                params={
+                    "q": q,
+                    "format": "json",
+                    "countrycodes": "us",
+                    "addressdetails": 0,
+                    "limit": 5,
+                    "dedupe": 0,
+                    "accept-language": "en",
+                },
+                headers=headers,
+                timeout=5
+            )
 
-        response = requests.get(
-            "https://nominatim.openstreetmap.org/search",
-            params={
-                "q": query,
-                "format": "json",
-                "countrycodes": "us",
-                "addressdetails": 0,
-                "limit": 5,
-            },
-            headers=headers,
-        )
-
+        # Primary search
+        response = nominatim_search(query)
         data = response.json()
-        serializer = GeocodeResultSerializer(data=data, many=True)
+
+        # Optional fallback: use first word if original query returns nothing
+        if not data and " " in query:
+            fallback = query.split()[0]
+            response = nominatim_search(fallback)
+            data = response.json()
+
+        serializer = self.serializer_class(data=data, many=True)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.data)
 

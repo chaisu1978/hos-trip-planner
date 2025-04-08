@@ -153,6 +153,19 @@ const LocationDrawer = ({
     }, 500);
   }, [open, initialValue]);
 
+  useEffect(() => {
+    if (open) {
+      const timeout = setTimeout(() => {
+        const inputEl = document.querySelector(
+          'input[aria-label="Search location"]'
+        ) as HTMLInputElement | null;
+        inputEl?.focus();
+      }, 300);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [open]);
+
   return (
     <Drawer
       anchor="right"
@@ -213,6 +226,11 @@ const LocationDrawer = ({
               label="Search location"
               variant="outlined"
               size="medium"
+              inputProps={{
+                ...params.inputProps,
+                "aria-label": "Search location", // uniquely target this field
+                tabIndex: 0,
+              }}
               sx={{
                 backgroundColor: "background.default",
                 borderRadius: 1,
