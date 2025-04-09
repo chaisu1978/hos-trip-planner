@@ -8,6 +8,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework import status
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
+from core.utils.security import reject_if_untrusted
 
 from .models import User
 from .serializers import (
@@ -29,12 +30,15 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 class PublicTokenView(APIView):
     """Generate a temporary JWT token for public users."""
-    permission_classes = [AllowAny]  # Public access
-    serializer_class = PublicTokenSerializer  # Add this line
+    permission_classes = [AllowAny]
+    serializer_class = PublicTokenSerializer
 
     def post(self, request, *args, **kwargs):
+        reject = reject_if_untrusted(request)
+        if reject:
+            return reject
         token = AccessToken()
-        token["is_public"] = True  # Add custom claim for public access
+        token["is_public"] = True
         data = {"access": str(token)}
         serializer = self.serializer_class(data)
         return Response(serializer.data, status=status.HTTP_200_OK)

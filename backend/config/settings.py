@@ -194,6 +194,12 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",  # For AJAX requests
 ]
 
+CORS_ALLOW_CREDENTIALS = True
+
+TRUSTED_REFERER = os.environ.get("TRUSTED_REFERER", "")
+
+# Email settings
+
 if DEBUG:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 else:
@@ -206,8 +212,6 @@ else:
     DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_HOST_USER')
 
 DJANGO_REST_PASSWORDRESET_TOKEN_VALIDITY = 3600  # 1 hour
-
-CORS_ALLOW_CREDENTIALS = True
 
 DOMAIN = os.environ.get('DOMAIN')
 

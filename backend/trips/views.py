@@ -24,6 +24,7 @@ from django.http import HttpResponse
 import cairosvg
 from io import BytesIO
 from PyPDF2 import PdfMerger
+from core.utils.security import reject_if_untrusted
 
 class TripViewSet(viewsets.ModelViewSet):
     serializer_class = TripSerializer
@@ -127,6 +128,9 @@ class GeocodeSearchView(APIView):
     serializer_class = GeocodeResultSerializer
 
     def get(self, request):
+        reject = reject_if_untrusted(request)
+        if reject:
+            return reject
         query = request.query_params.get("q", "").strip()
 
         # Normalize query for cache key
@@ -188,6 +192,9 @@ class GeocodeReverseView(APIView):
         responses=GeocodeReverseResultSerializer
     )
     def get(self, request):
+        reject = reject_if_untrusted(request)
+        if reject:
+            return reject
         lat = request.query_params.get("lat")
         lon = request.query_params.get("lon")
 
