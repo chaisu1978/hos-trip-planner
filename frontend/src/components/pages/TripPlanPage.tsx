@@ -1,16 +1,9 @@
 import { useState } from "react";
-import {
-  useTheme,
-  Box,
-  Typography,
-  Button,
-  CircularProgress,
-} from "@mui/material";
+import { useTheme, Box, Typography } from "@mui/material";
 
-import TripLegCard from "../trip/TripLegCard";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
 import TripInputPanel from "../trip/TripInputPanel";
+import TripSummaryPanel from "../trip/TripSummaryPanel";
 import LocationDrawer from "../trip/LocationDrawer";
 import AnimatedTripMap from "../trip/AnimatedTripMap";
 import { TripLeg } from "../../types/TripLeg";
@@ -18,8 +11,6 @@ import { useSnackbar } from "../common/SnackbarProvider";
 import apiClient from "../../services/auth";
 import { motion } from "framer-motion";
 import { useRef } from "react";
-import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
-import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import LoadingOverlay from "../common/LoadingOverlay";
 import SvgLogbookModal from "../triplogs/SvgLogbookModal";
 
@@ -54,20 +45,6 @@ const TripPlanPage = () => {
   const [logsLoading, setLogsLoading] = useState(false);
 
   const tripPlanned = !!trip;
-  const totalMiles = trip?.legs?.reduce(
-    (sum: number, leg: TripLeg) => sum + Number(leg.distance_miles ?? 0),
-    0
-  );
-
-  const totalHoursRaw = trip?.legs?.reduce(
-    (sum: number, leg: TripLeg) => sum + Number(leg.duration_hours ?? 0),
-    0
-  );
-
-  const totalHours = Number.isFinite(totalHoursRaw) ? totalHoursRaw : 0;
-  const hours = Math.floor(totalHours);
-  const minutes = Math.round((totalHours - hours) * 60);
-  const formattedDuration = `${hours} hrs ${minutes} min`;
 
   const handleLocationSelect = (location: LocationData) => {
     if (drawerType === "current") setCurrentLocation(location);
@@ -129,26 +106,9 @@ const TripPlanPage = () => {
       }
       // TODO: Store trip in local state for summary/logbook display
     } catch (error) {
-      console.error("Trip planning failed", error);
       showSnackbar("Failed to plan trip. Please try again.", "error");
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const scrollByAmount = 200;
-
-  const scrollLeft = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: -scrollByAmount, behavior: "smooth" });
-    }
-  };
-
-  const scrollRight = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: scrollByAmount, behavior: "smooth" });
     }
   };
 
@@ -210,7 +170,6 @@ const TripPlanPage = () => {
       setLogSvgUrls(urls);
       setLogModalOpen(true);
     } catch (error) {
-      console.error("Failed to load logs", error);
       showSnackbar("Unable to generate logs. Please try again.", "error");
     } finally {
       setLogsLoading(false);
@@ -286,70 +245,18 @@ const TripPlanPage = () => {
             }}
           />
         </Box>
-        <Box
-          id="trip-summary-header"
-          display={"flex"}
-          flexDirection={{ xs: "column", sm: "row" }}
-          justifyContent={"space-between"}
-          alignItems={{ xs: "center", sm: "baseline" }}
-          width={"100%"}
-        >
-          <Typography
-            variant="h5"
-            fontFamily={"typeography.h1"}
-            fontWeight={400}
-          >
-            TRIP SUMMARY
-          </Typography>
-          {trip?.legs?.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-              style={{ display: "flex", gap: "8px" }}
-            >
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                fontSize="1.1rem"
-                fontWeight={600}
-              >
-                {`${Number.isFinite(totalMiles) ? totalMiles.toFixed(0) : "0"} miles, ${formattedDuration}`}
-              </Typography>
-            </motion.div>
-          )}
-
-          {trip && (
-            <motion.div
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-              style={{ display: "flex", gap: "8px" }}
-            >
-              <Button
-                variant="contained"
-                size="large"
-                startIcon={
-                  logsLoading ? (
-                    <CircularProgress size={24} color="inherit" />
-                  ) : (
-                    <LibraryBooksIcon />
-                  )
-                }
-                sx={{
-                  borderRadius: "24px",
-                  padding: "8px 24px",
-                  backgroundColor: "tertiary.main",
-                  color: "text.primary",
-                }}
-                onClick={handleShowLogs}
-                disabled={logsLoading}
-              >
-                {logsLoading ? "GETTING LOGS" : "DAILY LOGS"}
-              </Button>
-            </motion.div>
-          )}
-        </Box>
+        {trip?.legs?.length > 0 && (
+          <TripSummaryPanel
+            trip={trip}
+            selectedLegId={selectedLegId}
+            onSelectLeg={(id) => {
+              const leg = trip.legs.find((l: TripLeg) => l.id === id);
+              if (leg) handleLegCardClick(leg);
+            }}
+            onShowLogs={handleShowLogs}
+            logsLoading={logsLoading}
+          />
+        )}
         {!trip && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -389,78 +296,6 @@ const TripPlanPage = () => {
                 Use the controls on the left to enter your trip details, then
                 click <strong>Plan Trip</strong> to get started.
               </Typography>
-            </Box>
-          </motion.div>
-        )}
-        {trip && trip.legs?.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            style={{ width: "100%" }}
-          >
-            <Box
-              display="flex"
-              alignItems="center"
-              gap={1}
-              width="100%"
-              sx={{ overflow: "hidden" }}
-            >
-              <Button
-                onClick={scrollLeft}
-                variant="outlined"
-                color="inherit"
-                size="small"
-                sx={{ minWidth: "40px", height: "40px", borderRadius: "20px" }}
-              >
-                <ArrowBackIosNewIcon fontSize="small" />
-              </Button>
-
-              <Box
-                ref={scrollRef}
-                display="flex"
-                flexDirection="row"
-                gap={2}
-                padding={1}
-                sx={{
-                  maxWidth: {
-                    xs: "100%",
-                    sm: "calc(100vw - 530px)",
-                  },
-                  overflowX: "auto",
-                  scrollbarWidth: "thin",
-                  scrollSnapType: "x mandatory",
-                  WebkitOverflowScrolling: "touch",
-                  scrollPadding: "1rem",
-                }}
-              >
-                {trip.legs.map((leg: TripLeg, index: number) => (
-                  <motion.div
-                    key={leg.id}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.3, duration: 0.4 }}
-                    style={{ scrollSnapAlign: "start", flexShrink: 0 }}
-                    onClick={() => handleLegCardClick(leg)}
-                  >
-                    <TripLegCard
-                      leg={leg}
-                      selected={selectedLegId === leg.id}
-                      onClick={() => handleLegCardClick(leg)}
-                    />
-                  </motion.div>
-                ))}
-              </Box>
-
-              <Button
-                onClick={scrollRight}
-                variant="outlined"
-                color="inherit"
-                size="small"
-                sx={{ minWidth: "40px", height: "40px", borderRadius: "20px" }}
-              >
-                <ArrowForwardIosIcon fontSize="small" />
-              </Button>
             </Box>
           </motion.div>
         )}

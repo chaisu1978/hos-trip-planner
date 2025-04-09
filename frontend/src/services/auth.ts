@@ -34,7 +34,9 @@ apiClient.interceptors.response.use(
             originalRequest.headers.Authorization = `Bearer ${data.access}`;
             return apiClient(originalRequest);
           } catch (err) {
-            console.error("Token refresh failed. Logging out user.", err); // Debugging
+            if (import.meta.env.DEV) {
+              console.error("Token refresh failed. Logging out user.", err);
+            }
             localStorage.clear();
             window.location.href = "/login";
             return Promise.reject(err);

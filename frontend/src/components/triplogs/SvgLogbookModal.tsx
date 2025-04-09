@@ -49,7 +49,9 @@ const SvgLogbookModal = ({
       link.click();
       link.remove();
     } catch (error) {
-      console.error("Failed to download logs PDF", error);
+      if (import.meta.env.DEV) {
+        console.error("Failed to download logs PDF", error);
+      }
     } finally {
       setDownloading(false);
     }

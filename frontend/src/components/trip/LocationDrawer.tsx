@@ -46,7 +46,10 @@ const fetchLocations = async (
     });
     setResults(data);
   } catch (error) {
-    console.error("Geocode search failed", error);
+    if (import.meta.env.DEV) {
+      console.error("Location search failed", error);
+    }
+
     setResults([]);
   }
   setLoading(false);
@@ -62,7 +65,10 @@ const fetchReverseGeocode = async (
     });
     return data.display_name || "Selected location";
   } catch (error) {
-    console.error("Reverse geocode failed", error);
+    if (import.meta.env.DEV) {
+      console.error("Reverse geocode failed", error);
+    }
+
     return "Selected location";
   }
 };
@@ -329,7 +335,9 @@ const LocationDrawer = ({
                   showSnackbar("Location detected successfully!", "success");
                 },
                 (error) => {
-                  console.error("Geolocation error:", error);
+                  if (import.meta.env.DEV) {
+                    console.error("Geolocation error:", error);
+                  }
                   setLocating(false);
 
                   showSnackbar(
