@@ -250,14 +250,6 @@ export default function AnimatedTripMap({
           }
 
           if (lat == null || lon == null) return null;
-          console.log(
-            "Placing marker for leg",
-            leg.id,
-            leg.leg_type,
-            "at",
-            lat,
-            lon
-          );
 
           return (
             <Marker

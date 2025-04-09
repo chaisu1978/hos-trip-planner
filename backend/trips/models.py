@@ -62,6 +62,9 @@ class TripLeg(models.Model):
 
     notes = models.TextField(blank=True)
 
+    class Meta:
+        ordering = ['leg_order']
+
     def __str__(self):
         return f"Leg {self.leg_order} of Trip {self.trip.id}"
 
@@ -81,6 +84,9 @@ class TripSegmentStep(models.Model):
     end_lon = models.FloatField()
     # [start_idx, end_idx] from ORS (optional)
     waypoints = models.JSONField(null=True, blank=True, default=list)
+
+    class Meta:
+        ordering = ['step_order']
 
     def __str__(self):
         return f"Step {self.step_order} of Leg {self.leg.id}"

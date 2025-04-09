@@ -127,7 +127,6 @@ const TripPlanPage = () => {
         end_lat: leg.end_lat,
         end_lon: leg.end_lon,
       }));
-      console.log("Trip Legs API Response", response.data.legs);
       showSnackbar("Trip planned successfully!", "success");
 
       setTrip({ ...response.data, legs }); // override legs with normalized version

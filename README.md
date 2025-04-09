@@ -1,37 +1,86 @@
 # HOS Trip Planner
 
-**HOS Trip Planner** is a full-stack application that allows users to plan FMCSA-compliant truck routes and generate ELD-style daily log sheets. It helps ensure that trips adhere to Hours of Service (HOS) regulations by automatically calculating legal drive-time segments, required breaks, and stop schedules.
+**HOS Trip Planner** is a full-stack application that helps truck drivers and dispatchers plan FMCSA-compliant routes and automatically generate ELD-style daily logbooks.
 
-The project is split into two main parts:
+It calculates legal driving periods, required rest breaks, fueling stops, and ensures total hours stay within Hours of Service (HOS) limits. The app also provides animated maps and downloadable logbook PDFs.
 
-- **Backend**: Django + Django REST Framework (DRF) with JWT auth
-- **Frontend**: React + TypeScript using Vite
+---
+
+## 🔍 Overview
+
+- **Frontend**: React + TypeScript + Vite (Material UI, Leaflet, Framer Motion)
+- **Backend**: Django + Django REST Framework with JWT authentication
+- **Mapping**: OpenStreetMap + OpenRouteService
+- **Log Rendering**: Custom SVG + PDF generation
+
+---
+
+## 🚀 Features
+
+✅ Plan trips using FMCSA HOS rules:
+
+- 11-hour daily driving limit
+- 14-hour duty window
+- Mandatory 30-minute breaks
+- 70-hour/8-day rolling cycle
+- Fueling every 1,000 miles
+- 34-hour cycle reset if needed
+
+✅ Generate segmented trip legs with reasons for stops  
+✅ Visualize route on interactive map  
+✅ View and export FMCSA-style **daily logbook sheets**  
+✅ Download **PDF of logs**  
+✅ Light/dark theme support  
+✅ Fully responsive UI
 
 ---
 
 ## 🧪 MVP Scope
 
-- Plan truck trips using HOS rules (11-hour driving limit, 14-hour duty window, 70-hour/8-day cycle)
-- Display the trip route on a map with rest/fuel/pickup/dropoff stops
-- Generate ELD-style daily log sheets for each segment (leg)
-- Download/export log sheets
-- Authenticated users can view and manage trip history
+- Input trip locations (Current → Pickup → Dropoff)
+- Input current cycle hours used
+- Visualize trip with stops, labels, durations
+- Display summary (total miles, time, leg list)
+- View SVG log previews in a fullscreen modal
+- Export all logs as a downloadable PDF
 
 ---
 
-## 🔐 Auth
+## 🔐 Authentication
 
-Authentication is handled with JWT via `djangorestframework-simplejwt`.
+- Supports public token access (anonymous users)
+- JWT auth via `djangorestframework-simplejwt`
 
 ---
 
-## 📁 .env file
+## 🛠️ Tech Stack
 
-Create a `.env` file in the root of the project with the following variables:
+**Frontend:**
 
-```bash
+- React + Vite + TypeScript
+- Material UI (custom themes + dark mode)
+- Redux Toolkit (auth, theme)
+- Leaflet (maps), Framer Motion (animations)
+
+**Backend:**
+
+- Django 5.1+
+- Django REST Framework
+- PostgreSQL
+- SimpleJWT + custom public token
+- DRF Spectacular (OpenAPI docs)
+- SVG manipulation via `xml.etree.ElementTree`
+- PDF export using CairoSVG + PyPDF2
+
+---
+
+## 📂 Environment Setup
+
+### `.env` (backend)
+
+```env
 DJANGO_DEBUG=True
-DJANGO_ALLOWED_HOSTS=\*
+DJANGO_ALLOWED_HOSTS=*
 DB_HOST=db
 DB_NAME=devdb
 DB_USER=devuser
@@ -40,7 +89,7 @@ DJANGO_SECRET_KEY="django-key-goes-here"
 POSTGRES_DB=devdb
 POSTGRES_USER=devuser
 POSTGRES_PASSWORD=devpass
-DOMAIN='http://localhost:8000'
+DOMAIN=http://localhost:8000
 CORS_ORIGINS=http://localhost:5173
 CSRF_TRUSTED=http://localhost:5173
 
@@ -58,54 +107,26 @@ VITE_API_BASE_URL=http://localhost:8000/api
 
 ---
 
-## 🧰 Backend
-
-The backend is a Django RESTful API responsible for trip planning, route segmentation, log sheet generation, and user authentication. Trips are planned according to FMCSA HOS regulations.
-
-**Technologies:**
-
-- Django 5.1+
-- Django REST Framework
-- PostgreSQL
-- SimpleJWT
-- DRF Spectacular (for OpenAPI schema generation)
-
----
-
-## 🖥️ Frontend
-
-The frontend is a modern React + Vite app built with TypeScript. It uses:
-
-- Material UI (MUI)
-- React Query (TanStack)
-- React Leaflet for maps
-- Formik + Yup for form handling
-- Redux Toolkit (optional state management)
-- Framer Motion for UI polish
-
----
-
 ## 🐳 Run with Docker
 
 To run the app in development mode using Docker:
 
 1. Clone the repository
 2. Navigate to the root directory
-3. Build the containers:
+3. Build containers
 
-   docker compose build
+```bash
+docker compose build
+```
 
-4. Start the services:
+4. Start app
 
-   docker compose up
-
-5. Backend will be available at `http://localhost:8000`
-6. Frontend will be available at `http://localhost:5173`
-
----
-
-## ✨ Status
-
-This project is being actively developed as part of a full-stack technical assessment. MVP features are being implemented incrementally with a focus on clarity, compliance, and UX polish.
+```bash
+docker compose up
+```
 
 ---
+
+# 👤 Author
+
+Built by Terrence Hosang.

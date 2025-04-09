@@ -231,7 +231,6 @@ def inject_duty_periods_into_svg(logs, trip_id, svg_input=SVG_PATH, output_dir=P
 
     for log in logs:
         date = log["date"]
-        print(f"\n🗓️ Injecting log for {date}...")
 
         tree = ET.parse(svg_input)
         root = tree.getroot()
@@ -315,7 +314,9 @@ def inject_duty_periods_into_svg(logs, trip_id, svg_input=SVG_PATH, output_dir=P
             current_y = midpoint_between(status, y_map)
 
             if x1 is None or x2 is None or current_y is None:
-                print(f"⚠️ Missing position for {start_time}–{end_time} or status '{status}'")
+                #  Debug for off positioning
+                if settings.DEBUG:
+                    print(f"Missing position for {start_time}–{end_time} or status '{status}'")
                 continue
 
             # (a) Draw vertical transition from previous status (if needed)
@@ -363,4 +364,3 @@ def inject_duty_periods_into_svg(logs, trip_id, svg_input=SVG_PATH, output_dir=P
         out_file = output_dir / str(trip_id) / "logs" / f"output-{date}.svg"
         out_file.parent.mkdir(parents=True, exist_ok=True)
         tree.write(out_file, encoding="utf-8", xml_declaration=True)
-        print(f"✅ Saved SVG for {date} → {out_file}")

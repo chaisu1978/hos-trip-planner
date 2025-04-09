@@ -85,7 +85,7 @@ class TripViewSet(viewsets.ModelViewSet):
             "count": len(svg_urls),
             "svg_urls": svg_urls
         })
-    
+
     @extend_schema(
         responses={200: "application/pdf"},
         description="Download all SVG daily logs as a combined PDF"
