@@ -6,14 +6,11 @@ import {
   Button,
   CircularProgress,
 } from "@mui/material";
-import PersonPinCircleIcon from "@mui/icons-material/PersonPinCircle";
-import LocationInput from "../trip/LocationInput";
+
 import TripLegCard from "../trip/TripLegCard";
-import CycleHoursInput from "../trip/CycleHoursInput";
-import ArchiveIcon from "@mui/icons-material/Archive";
-import UnarchiveIcon from "@mui/icons-material/Unarchive";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
+import TripInputPanel from "../trip/TripInputPanel";
 import LocationDrawer from "../trip/LocationDrawer";
 import AnimatedTripMap from "../trip/AnimatedTripMap";
 import { TripLeg } from "../../types/TripLeg";
@@ -24,7 +21,6 @@ import { useRef } from "react";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import LoadingOverlay from "../common/LoadingOverlay";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import SvgLogbookModal from "../triplogs/SvgLogbookModal";
 
 interface LocationData {
@@ -72,11 +68,6 @@ const TripPlanPage = () => {
   const hours = Math.floor(totalHours);
   const minutes = Math.round((totalHours - hours) * 60);
   const formattedDuration = `${hours} hrs ${minutes} min`;
-
-  const handleOpenDrawer = (type: "current" | "pickup" | "dropoff") => {
-    setDrawerType(type);
-    setDrawerOpen(true);
-  };
 
   const handleLocationSelect = (location: LocationData) => {
     if (drawerType === "current") setCurrentLocation(location);
@@ -242,110 +233,23 @@ const TripPlanPage = () => {
     >
       {submitting && <LoadingOverlay />}
 
-      <Box
-        id="inputs"
-        display={"flex"}
-        flexDirection={"column"}
-        justifyContent={"flex-start"}
-        alignItems={"center"}
-        padding={"11px 16px 16px 16px"}
-        gap={"12px"}
-        width={{ xs: "100%", sm: "310px" }}
-        minWidth={{ xs: "100%", sm: "310px" }}
-        sx={{
-          borderRadius: "0px 16px 0px 16px",
-          background: (theme) =>
-            `linear-gradient(to bottom, ${theme.palette.background.paper}, ${theme.palette.highlight.light})`,
-          position: { xs: "static", sm: "sticky" },
-          top: { sm: "80px" },
-          // minHeight: "80vh",
-        }}
-      >
-        <Typography variant="h5" fontFamily={"typeography.h1"} fontWeight={400}>
-          TRIP DETAILS
-        </Typography>
-        {/* INPUT CARDS - TO MAKE INTO COMPONENT */}
-        <LocationInput
-          icon={<PersonPinCircleIcon />}
-          baseLabel="CURRENT LOCATION"
-          description="Let us know where you're starting from. You can use your current GPS location or manually enter it."
-          value={currentLocation || undefined}
-          onClick={() => handleOpenDrawer("current")}
-          onClear={() => setCurrentLocation(null)}
-          disabled={tripPlanned}
-        />
-        <LocationInput
-          icon={<ArchiveIcon />}
-          baseLabel="PICKUP LOCATION"
-          description="Where are you picking up your load? Includes a one hour loading delay in trip plan."
-          value={pickupLocation || undefined}
-          onClick={() => handleOpenDrawer("pickup")}
-          onClear={() => setPickupLocation(null)}
-          disabled={tripPlanned}
-        />
-        <LocationInput
-          icon={<UnarchiveIcon />}
-          baseLabel="DROPOFF LOCATION"
-          value={dropoffLocation || undefined}
-          description="Where are you delivering your load? Includes a one hour unloading delay in trip plan."
-          onClick={() => handleOpenDrawer("dropoff")}
-          onClear={() => setDropoffLocation(null)}
-          disabled={tripPlanned}
-        />
+      <TripInputPanel
+        currentLocation={currentLocation}
+        pickupLocation={pickupLocation}
+        dropoffLocation={dropoffLocation}
+        cycleHours={cycleHours}
+        setCurrentLocation={setCurrentLocation}
+        setPickupLocation={setPickupLocation}
+        setDropoffLocation={setDropoffLocation}
+        setDrawerType={setDrawerType}
+        setDrawerOpen={setDrawerOpen}
+        setCycleHours={setCycleHours}
+        submitting={submitting}
+        tripPlanned={tripPlanned}
+        onSubmitTrip={handleSubmitTrip}
+        onResetTrip={handleResetTrip}
+      />
 
-        <CycleHoursInput
-          value={cycleHours}
-          onChange={setCycleHours}
-          disabled={tripPlanned}
-        />
-
-        <motion.div
-          animate={{
-            scale:
-              currentLocation && pickupLocation && dropoffLocation ? 1 : 0.95,
-            opacity:
-              currentLocation && pickupLocation && dropoffLocation ? 1 : 0.5,
-          }}
-          transition={{ duration: 0.2 }}
-          style={{ width: "100%" }}
-        >
-          {trip ? (
-            <Button
-              variant="contained"
-              size="large"
-              startIcon={<RestartAltIcon />}
-              color="primary"
-              onClick={handleResetTrip}
-              fullWidth
-              sx={{ borderRadius: "24px", padding: "8px" }}
-            >
-              PLAN NEW TRIP
-            </Button>
-          ) : (
-            <Button
-              variant="contained"
-              size="large"
-              color="secondary"
-              startIcon={
-                submitting ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  <CalendarMonthIcon />
-                )
-              }
-              fullWidth
-              disabled={
-                !(currentLocation && pickupLocation && dropoffLocation) ||
-                submitting
-              }
-              sx={{ borderRadius: "24px", padding: "8px" }}
-              onClick={handleSubmitTrip}
-            >
-              PLAN TRIP
-            </Button>
-          )}
-        </motion.div>
-      </Box>
       <Box
         id="trip-summary"
         display={"flex"}
