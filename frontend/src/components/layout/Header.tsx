@@ -8,6 +8,7 @@ import { RootState } from "../../store";
 import { logout } from "../../services/auth";
 import { Link } from "react-router-dom";
 import LightLogo from "../../assets/hos-icon-light.svg";
+import ThemeToggle from "../common/ThemeToggle";
 
 const Header = () => {
   const isAuthenticated = useSelector(
@@ -19,7 +20,7 @@ const Header = () => {
   };
 
   return (
-    <AppBar position="sticky">
+    <AppBar position="sticky" sx={{ backgroundColor: "primary.main" }}>
       <Toolbar>
         {/* Left side: Logo or Title */}
         <Link to="/">
@@ -46,7 +47,11 @@ const Header = () => {
         {/* Right side: conditional buttons */}
         {!isAuthenticated ? (
           <Box>
-            <Button
+            <ThemeToggle />
+
+            {/* For Later With User Login */}
+
+            {/* <Button
               variant="contained"
               color="primary"
               size="small"
@@ -64,7 +69,7 @@ const Header = () => {
               to="/sign-up"
             >
               Sign Up
-            </Button>
+            </Button> */}
           </Box>
         ) : (
           <Box>

@@ -4,8 +4,8 @@ import paletteComponents from './paletteComponents';
 const darkTheme = createTheme({
   palette: {
     mode: 'dark',
-    primary: { main: paletteComponents.primary[600], },
-    secondary: { main: paletteComponents.secondary[800] },
+    primary: { main: paletteComponents.primary[700], },
+    secondary: { main: paletteComponents.secondary[700] },
     tertiary: { main: paletteComponents.tertiary[700] },
     searchbox: {
       main: paletteComponents.tertiary[700],
@@ -14,10 +14,10 @@ const darkTheme = createTheme({
       contrastText: paletteComponents.neutral[300],
     },
     highlight: {
-      main: paletteComponents.secondary[700],
-      light: paletteComponents.secondary[600],
-      dark: paletteComponents.secondary[800],
-      contrastText: paletteComponents.neutral[200],
+      main: paletteComponents.neutral[800],
+      light: paletteComponents.neutral[700],
+      dark: paletteComponents.neutral[900],
+      contrastText: paletteComponents.neutral[300],
     },
     background: {
       default: paletteComponents.neutral[800],
@@ -26,16 +26,16 @@ const darkTheme = createTheme({
     text: {
       primary: paletteComponents.neutral[300],
       secondary: paletteComponents.neutral[400],
-      branda: paletteComponents.primary[500],
-      brandb: paletteComponents.secondary[300],
-      brandc: paletteComponents.tertiary[300],
-      searchbox: paletteComponents.tertiary[700],
+      branda: paletteComponents.primary[100],
+      brandb: paletteComponents.secondary[100],
+      brandc: paletteComponents.tertiary[100],
+      searchbox: paletteComponents.tertiary[100],
     },
-    error: { main: paletteComponents.red[600] },
-    warning: { main: paletteComponents.orange[600] },
-    info: { main: paletteComponents.blue[600] },
-    success: { main: paletteComponents.green[600] },
-    divider: paletteComponents.secondary[200],
+    error: { main: paletteComponents.red[700] },
+    warning: { main: paletteComponents.orange[700] },
+    info: { main: paletteComponents.blue[700] },
+    success: { main: paletteComponents.green[700] },
+    divider: paletteComponents.neutral[300],
   },
   typography: {
     fontFamily: '"Roboto", sans-serif',
