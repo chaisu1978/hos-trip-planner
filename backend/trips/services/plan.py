@@ -56,9 +56,16 @@ def plan_trip(trip: Trip):
 
     def haversine_distance_miles(lon1, lat1, lon2, lat2):
         """
-        Simple helper to compute geodesic distance in miles
-        between two points (lon/lat in decimal degrees).
-        """
+        Compute the great-circle distance between two geographic points (in miles)
+        using the Haversine formula.
+
+        Parameters:
+        - lon1, lat1: Longitude and latitude of the first point
+        - lon2, lat2: Longitude and latitude of the second point
+
+        Returns:
+        - Distance in miles as a float
+            """
         R = 3958.8  # Radius of Earth in miles
         dlon = radians(lon2 - lon1)
         dlat = radians(lat2 - lat1)
