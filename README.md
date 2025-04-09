@@ -26,11 +26,11 @@ It calculates legal driving periods, required rest breaks, fueling stops, and en
 - Fueling every 1,000 miles
 - 34-hour cycle reset if needed
 
-✅ Generate segmented trip legs with reasons for stops  
-✅ Visualize route on interactive map  
-✅ View and export FMCSA-style **daily logbook sheets**  
-✅ Download **PDF of logs**  
-✅ Light/dark theme support  
+✅ Generate segmented trip legs with reasons for stops
+✅ Visualize route on interactive map
+✅ View and export FMCSA-style **daily logbook sheets**
+✅ Download **PDF of logs**
+✅ Light/dark theme support
 ✅ Fully responsive UI
 
 ---
@@ -92,6 +92,8 @@ POSTGRES_PASSWORD=devpass
 DOMAIN=http://localhost:8000
 CORS_ORIGINS=http://localhost:5173
 CSRF_TRUSTED=http://localhost:5173
+ORS_KEY=<your-openrouteservice-key>
+TRUSTED_REFERER=http://localhost:5173
 
 ```
 
