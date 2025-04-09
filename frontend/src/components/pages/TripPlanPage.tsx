@@ -408,6 +408,7 @@ const TripPlanPage = () => {
               <Typography
                 variant="body2"
                 color="text.secondary"
+                fontSize="1.1rem"
                 fontWeight={600}
               >
                 {`${Number.isFinite(totalMiles) ? totalMiles.toFixed(0) : "0"} miles, ${formattedDuration}`}
@@ -425,7 +426,6 @@ const TripPlanPage = () => {
               <Button
                 variant="contained"
                 size="large"
-                color="secondary"
                 startIcon={
                   logsLoading ? (
                     <CircularProgress size={24} color="inherit" />
@@ -433,7 +433,12 @@ const TripPlanPage = () => {
                     <LibraryBooksIcon />
                   )
                 }
-                sx={{ borderRadius: "24px", padding: "8px 24px" }}
+                sx={{
+                  borderRadius: "24px",
+                  padding: "8px 24px",
+                  backgroundColor: "tertiary.main",
+                  color: "text.primary",
+                }}
                 onClick={handleShowLogs}
                 disabled={logsLoading}
               >
@@ -501,6 +506,7 @@ const TripPlanPage = () => {
               <Button
                 onClick={scrollLeft}
                 variant="outlined"
+                color="inherit"
                 size="small"
                 sx={{ minWidth: "40px", height: "40px", borderRadius: "20px" }}
               >
@@ -546,6 +552,7 @@ const TripPlanPage = () => {
               <Button
                 onClick={scrollRight}
                 variant="outlined"
+                color="inherit"
                 size="small"
                 sx={{ minWidth: "40px", height: "40px", borderRadius: "20px" }}
               >

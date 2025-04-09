@@ -6,7 +6,7 @@ const lightTheme = createTheme({
     mode: 'light',
     primary: { main: paletteComponents.primary[500] },
     secondary: { main: paletteComponents.secondary[500] },
-    tertiary: { main: paletteComponents.tertiary[500] },
+    tertiary: { main: paletteComponents.tertiary[400] },
     searchbox: {
       main: paletteComponents.tertiary[700],
       light: paletteComponents.tertiary[300],

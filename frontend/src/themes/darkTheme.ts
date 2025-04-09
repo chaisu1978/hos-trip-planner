@@ -4,8 +4,8 @@ import paletteComponents from './paletteComponents';
 const darkTheme = createTheme({
   palette: {
     mode: 'dark',
-    primary: { main: paletteComponents.primary[700], },
-    secondary: { main: paletteComponents.secondary[700] },
+    primary: { main: paletteComponents.primary[600], },
+    secondary: { main: paletteComponents.secondary[600] },
     tertiary: { main: paletteComponents.tertiary[700] },
     searchbox: {
       main: paletteComponents.tertiary[700],
@@ -31,11 +31,11 @@ const darkTheme = createTheme({
       brandc: paletteComponents.tertiary[100],
       searchbox: paletteComponents.tertiary[100],
     },
-    error: { main: paletteComponents.red[700] },
-    warning: { main: paletteComponents.orange[700] },
-    info: { main: paletteComponents.blue[700] },
-    success: { main: paletteComponents.green[700] },
-    divider: paletteComponents.neutral[300],
+    error: { main: paletteComponents.red[600] },
+    warning: { main: paletteComponents.orange[600] },
+    info: { main: paletteComponents.blue[600] },
+    success: { main: paletteComponents.green[600] },
+    divider: paletteComponents.neutral[600],
   },
   typography: {
     fontFamily: '"Roboto", sans-serif',

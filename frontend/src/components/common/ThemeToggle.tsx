@@ -18,7 +18,7 @@ const ThemeToggle = () => {
       onChange={handleToggleTheme}
       name="themeToggle"
       size="medium"
-      color="primary"
+      color="default"
       checkedIcon={<FaMoon size={20} />}
       icon={<FaSun size={20} />}
     />

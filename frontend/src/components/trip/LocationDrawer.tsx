@@ -168,7 +168,7 @@ const LocationDrawer = ({
 
   return (
     <Drawer
-      anchor="right"
+      anchor="left"
       open={open}
       onClose={onClose}
       PaperProps={{
