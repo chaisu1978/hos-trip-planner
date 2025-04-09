@@ -74,8 +74,8 @@ const TripPlanPage = () => {
         dropoff_location_label: dropoffLocation.label,
         dropoff_location_lat: dropoffLocation.lat,
         dropoff_location_lon: dropoffLocation.lon,
-        current_cycle_hours: cycleHours.toFixed(2), // Backend expects stringified decimal
-        departure_time: new Date().toISOString(), // Backend expects ISO format
+        current_cycle_hours: cycleHours.toFixed(2),
+        departure_time: new Date().toISOString(),
       };
 
       const response = await apiClient.post("/trips/trips/", payload);
@@ -104,7 +104,6 @@ const TripPlanPage = () => {
           block: "start",
         });
       }
-      // TODO: Store trip in local state for summary/logbook display
     } catch (error) {
       showSnackbar("Failed to plan trip. Please try again.", "error");
     } finally {

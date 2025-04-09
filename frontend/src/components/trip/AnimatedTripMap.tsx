@@ -51,6 +51,15 @@ interface AnimatedTripMapProps {
   onCenterMap?: (fn: (lat: number, lon: number) => void) => void;
 }
 
+const legTypeColorMap: Record<string, MUIColor> = {
+  pickup: "warning",
+  dropoff: "success",
+  drive: "success",
+  rest: "info",
+  break: "info",
+  fuel: "error",
+};
+
 export default function AnimatedTripMap({
   trip,
   theme,
@@ -128,15 +137,6 @@ export default function AnimatedTripMap({
     return null;
   };
 
-  const legTypeColorMap: Record<string, MUIColor> = {
-    pickup: "warning",
-    dropoff: "success",
-    drive: "success",
-    rest: "info",
-    break: "info",
-    fuel: "error",
-  };
-
   const legIcons = {
     drive: <DirectionsCarIcon fontSize="small" />,
     rest: <HotelIcon fontSize="small" />,
@@ -188,23 +188,34 @@ export default function AnimatedTripMap({
               Array.isArray(leg.polyline_geometry) &&
               leg.polyline_geometry.length > 1
           )
-          .map((leg) => (
-            <Polyline
-              key={`polyline-${leg.id}`}
-              positions={leg.polyline_geometry as [number, number][]}
-              pathOptions={{
-                color:
-                  selectedLegId === leg.id
-                    ? theme.palette.warning.main
-                    : theme.palette.success.main,
-                weight: selectedLegId === leg.id ? 6 : 4,
-                opacity: 0.85,
-              }}
-              eventHandlers={{
-                click: () => onLegSelect(leg.id),
-              }}
-            />
-          ))}
+          .map((leg) =>
+            leg.leg_type === "drive" ? (
+              <DrivePolylineWithPopup
+                key={`polyline-${leg.id}`}
+                leg={leg}
+                selectedLegId={selectedLegId}
+                theme={theme}
+                onLegSelect={onLegSelect}
+                mapRef={mapRef}
+              />
+            ) : (
+              <Polyline
+                key={`polyline-${leg.id}`}
+                positions={leg.polyline_geometry as [number, number][]}
+                pathOptions={{
+                  color:
+                    selectedLegId === leg.id
+                      ? theme.palette.warning.main
+                      : theme.palette.success.main,
+                  weight: selectedLegId === leg.id ? 6 : 4,
+                  opacity: 0.85,
+                }}
+                eventHandlers={{
+                  click: () => onLegSelect(leg.id),
+                }}
+              />
+            )
+          )}
 
         {/* Markers for each leg */}
         {trip?.legs.slice(0, visibleLegCount).map((leg) => {
@@ -307,5 +318,72 @@ export default function AnimatedTripMap({
       </MapContainer>
       <ScrollZoomHint />
     </Box>
+  );
+}
+
+function DrivePolylineWithPopup({
+  leg,
+  selectedLegId,
+  theme,
+  onLegSelect,
+  mapRef,
+}: {
+  leg: TripLeg;
+  selectedLegId: number | null;
+  theme: Theme;
+  onLegSelect: (id: number) => void;
+  mapRef: React.RefObject<any>;
+}) {
+  const legType = leg.leg_type as keyof typeof legTypeColorMap;
+  const colorKey = legTypeColorMap[legType] ?? "info";
+
+  useEffect(() => {
+    if (!mapRef.current || selectedLegId !== leg.id) return;
+
+    mapRef.current.closePopup();
+
+    const latLngs = leg.polyline_geometry;
+    if (!latLngs || latLngs.length === 0) return;
+
+    const midIndex = Math.floor(latLngs.length / 2);
+    const [lat, lng] = latLngs[midIndex];
+
+    const popupContent = `
+      <div style="min-width:150px; padding:8px; font-family:Roboto, sans-serif;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+          <div style="width:28px; height:28px; border-radius:50%; background:${theme.palette[colorKey as "success" | "warning" | "error" | "info"].main}; color:white; display:flex; align-items:center; justify-content:center;">
+            🚛
+          </div>
+          <strong>${legType.toUpperCase()}</strong>
+        </div>
+        <div style="font-size:0.85rem;">
+          ${leg.notes || leg.start_label || leg.end_label || "No label"}
+        </div>
+      </div>
+    `;
+
+    L.popup()
+      .setLatLng([lat, lng])
+      .setContent(popupContent)
+      .openOn(mapRef.current);
+  }, [selectedLegId, leg, theme, mapRef]);
+
+  return (
+    <Polyline
+      positions={leg.polyline_geometry as [number, number][]}
+      pathOptions={{
+        color:
+          selectedLegId === leg.id
+            ? theme.palette.warning.main
+            : theme.palette.success.main,
+        weight: selectedLegId === leg.id ? 6 : 4,
+        opacity: 0.85,
+      }}
+      eventHandlers={{
+        click: () => {
+          onLegSelect(leg.id);
+        },
+      }}
+    />
   );
 }
