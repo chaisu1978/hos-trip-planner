@@ -1,7 +1,7 @@
 from django.core.cache import cache
 from django.utils.hashable import make_hashable
 from rest_framework.views import APIView
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, status
 from .models import Trip
 from .serializers import TripSerializer
 from .services.plan import plan_trip
@@ -32,16 +32,26 @@ class TripViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        if self.request.user and self.request.user.is_authenticated:
+        if self.request.user and not self.request.user.is_anonymous:
             return Trip.objects.filter(user=self.request.user).order_by("-planned_at")
-        else:
-            # Return trips with user=None (anonymous)
-            return Trip.objects.filter(user=None).order_by("-planned_at")
+        return Trip.objects.filter(user=None).order_by("-planned_at")
 
     def perform_create(self, serializer):
         user = self.request.user if self.request.user and self.request.user.is_authenticated else None
         trip = serializer.save(user=user)
         plan_trip(trip)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.user and instance.user != request.user:
+            return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+        return super().update(request, *args, **kwargs)
+
+    def perform_destroy(self, instance):
+        user = self.request.user
+        if instance.user and instance.user != user:
+            return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+        instance.delete()
 
     @extend_schema(
     request=None,
