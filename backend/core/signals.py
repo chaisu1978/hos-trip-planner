@@ -10,15 +10,10 @@ def password_reset_token_created(sender,
                                  reset_password_token,
                                  **kwargs
                                  ):
-    reset_link = f"{instance.request.build_absolute_uri(
-        '/reset-password/'
-        )}?token={reset_password_token.key}"
+    reset_link = f"{instance.request.build_absolute_uri('/reset-password/')}?token={reset_password_token.key}"
 
     # Render the email content
-    context = {
-        "reset_password_token": reset_password_token,
-        "reset_link": reset_link,
-    }
+    context = {"reset_password_token": reset_password_token, "reset_link": reset_link,}
     email_subject = "Password Reset Request"
     email_body = render_to_string("password_reset_email.html", context)
 
