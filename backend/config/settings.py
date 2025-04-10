@@ -113,9 +113,13 @@ USE_L10N = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = '/vol/web/static'
 MEDIA_URL = '/media/'
-MEDIA_ROOT = '/vol/web/media'
+if DEBUG:
+    STATIC_ROOT = '/vol/web/static'
+    MEDIA_ROOT = '/vol/web/media'
+else:
+    STATIC_ROOT = "/tmp/static"
+    MEDIA_ROOT = "/tmp/media"
 
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
@@ -219,7 +223,10 @@ USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = False
 
-LOGGING_DIR = "/vol/log"
+if DEBUG:
+    LOGGING_DIR = "/vol/log"
+else:
+    LOGGING_DIR = "/tmp/log"
 os.makedirs(LOGGING_DIR, exist_ok=True)  # Ensure directory exists
 
 # LOGGING FOR DEBUGGGING
