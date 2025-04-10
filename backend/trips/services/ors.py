@@ -4,7 +4,7 @@ from decimal import Decimal
 import polyline
 
 ORS_KEY = os.getenv("ORS_KEY")
-ORS_BASE_URL = "https://api.openrouteservice.org/v2/directions/driving-car"
+ORS_BASE_URL = "https://api.openrouteservice.org/v2/directions/driving-hgv"
 
 HEADERS = {
     "Authorization": ORS_KEY,
